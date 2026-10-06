@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e0d0b">
+<title>Y.E.S.I — Suivi Pro</title>
+<style>
+:root{--bg:#0e0d0b;--card:#17150f;--card2:#1f1c14;--line:#2e2a1e;--gold:#c9a24a;--gold2:#e6c878;--txt:#efe4cc;--mut:#9c927c;--ok:#6fbf73;--warn:#e0a63a;--bad:#d9634c;--blue:#7aa7d9}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.45 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif;padding-bottom:90px}
+header{position:sticky;top:0;z-index:5;background:rgba(14,13,11,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:12px 16px}
+.brand{display:flex;align-items:center;justify-content:space-between;max-width:760px;margin:0 auto}
+.brand h1{margin:0;font-size:17px;letter-spacing:.5px;color:var(--gold2)}
+.brand small{color:var(--mut);font-size:12px}
+main{padding:14px 16px;max-width:760px;margin:0 auto}
+nav{position:fixed;bottom:0;left:0;right:0;background:#12110d;border-top:1px solid var(--line);display:flex;padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:6}
+nav button{flex:1;background:none;border:0;color:var(--mut);font-size:11px;padding:6px 0;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:inherit}
+nav button span{font-size:20px;line-height:1;filter:grayscale(1);opacity:.7}
+nav button.on{color:var(--gold2)}
+nav button.on span{filter:none;opacity:1}
+.fab{position:fixed;right:16px;bottom:calc(80px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;background:var(--gold);color:#1a1408;border:0;font-size:30px;line-height:1;box-shadow:0 6px 18px rgba(0,0,0,.5);z-index:6}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--gold);margin:22px 0 10px}
+h2:first-child{margin-top:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+.card.tap{cursor:pointer}
+.card.tap:active{background:var(--card2)}
+.row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.t{font-weight:600}
+.m{color:var(--mut);font-size:13px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+.stat b{display:block;font-size:22px;color:var(--gold2)}
+.stat span{font-size:12px;color:var(--mut)}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid var(--line);color:var(--mut);white-space:nowrap}
+.b-ok{color:var(--ok);border-color:rgba(111,191,115,.4)}
+.b-warn{color:var(--warn);border-color:rgba(224,166,58,.45)}
+.b-bad{color:var(--bad);border-color:rgba(217,99,76,.45)}
+.b-gold{color:var(--gold2);border-color:rgba(201,162,74,.5)}
+.b-blue{color:var(--blue);border-color:rgba(122,167,217,.45)}
+.alert{border-left:3px solid var(--warn)}
+.alert.bad{border-left-color:var(--bad)}
+.empty{color:var(--mut);font-size:13px;text-align:center;padding:16px;border:1px dashed var(--line);border-radius:14px;margin-bottom:10px}
+input,select,textarea{width:100%;min-width:0;background:#0b0a08;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:inherit;font-size:16px}
+textarea{min-height:90px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold)}
+input[type=date],input[type=time]{min-height:44px}
+label{display:block;font-size:12px;color:var(--mut);margin:12px 0 5px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:11px 14px;font:inherit;font-size:14px;font-weight:600}
+.btn.gold{background:var(--gold);color:#1a1408;border-color:var(--gold)}
+.btn.bad{color:var(--bad)}
+.btn.sm{padding:8px 10px;font-size:13px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.btns .btn{flex:1}
+.seg{display:flex;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:3px;margin-bottom:12px;overflow-x:auto}
+.seg button{flex:1;background:none;border:0;color:var(--mut);padding:8px 6px;border-radius:8px;font:inherit;font-size:13px;white-space:nowrap}
+.seg button.on{background:var(--card2);color:var(--gold2)}
+.bar{height:6px;background:#0b0a08;border-radius:6px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--gold)}
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:20;display:none}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-height:92vh;overflow:auto;background:#14120d;border-top:1px solid var(--gold);border-radius:18px 18px 0 0;z-index:21;padding:8px 16px calc(24px + env(safe-area-inset-bottom));display:none;max-width:760px;margin:0 auto}
+.sheet .grab{width:40px;height:4px;background:var(--line);border-radius:4px;margin:4px auto 12px}
+.sheet h3{margin:0 0 4px;color:var(--gold2);font-size:18px}
+.open{display:block}
+.tl{border-left:2px solid var(--line);margin-left:6px;padding-left:14px}
+.tl .card{position:relative}
+.tl .card:before{content:"";position:absolute;left:-22px;top:16px;width:10px;height:10px;border-radius:50%;background:var(--gold);border:2px solid var(--bg)}
+.note{white-space:pre-wrap;background:#0b0a08;border-radius:10px;padding:10px;margin-top:8px;font-size:14px}
+.note b{color:var(--gold);font-size:11px;letter-spacing:.8px;display:block;margin-bottom:2px}
+.axes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
+.axes div{background:#0b0a08;border-radius:10px;padding:8px 2px}
+.axes b{display:block;color:var(--gold2);font-size:18px}
+.axes span{font-size:10px;color:var(--mut)}
+.pay{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)}
+.pay:last-child{border:0}
+.pay input[type=checkbox]{width:22px;height:22px;flex:0 0 22px;accent-color:var(--gold)}
+.toast{position:fixed;left:50%;bottom:160px;transform:translateX(-50%);background:var(--gold);color:#1a1408;padding:10px 16px;border-radius:20px;font-weight:600;z-index:30;display:none;white-space:nowrap}
+.back{background:none;border:0;color:var(--gold2);font:inherit;padding:0 0 10px}
+a{color:var(--gold2);text-decoration:none}
+.hello{background:linear-gradient(135deg,#221d10,#17150f);border:1px solid rgba(201,162,74,.4)}
+</style>
+</head>
+<body>
+<header><div class="brand"><div><h1>Y.E.S.I — Suivi Pro</h1><small>Bénéficiaires · RDV · Contrats</small></div><small id="hdate"></small></div></header>
+<main id="main"></main>
+<button class="fab" id="fab" onclick="fab()">+</button>
+<nav>
+<button data-t="home" onclick="go('home')"><span>🏠</span>Accueil</button>
+<button data-t="benef" onclick="go('benef')"><span>👤</span>Bénéf.</button>
+<button data-t="rdv" onclick="go('rdv')"><span>📅</span>RDV</button>
+<button data-t="contrats" onclick="go('contrats')"><span>📄</span>Contrats</button>
+<button data-t="plus" onclick="go('plus')"><span>⚙️</span>Plus</button>
+</nav>
+<div class="sheet-bg" id="sbg" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY='yesi_suivi_pro_v1';
+const BSTAT={actif:['Actif','b-ok'],prospect:['Prospect','b-blue'],pause:['En pause','b-warn'],termine:['Terminé','']};
+const RSTAT={prevu:['Prévu','b-gold'],fait:['Fait','b-ok'],absent:['Absent','b-bad'],annule:['Annulé','']};
+const CSTAT={encours:['En cours','b-ok'],attente:['En attente','b-warn'],termine:['Terminé',''],resilie:['Résilié','b-bad']};
+const AXES=[{k:'y',l:'Yes Attitude'},{k:'e',l:'Estime de soi'},{k:'s',l:'Smart Goals'},{k:'i',l:'Investissement'}];
+const TYPES=['Bilan Y.E.S.I','Séance de suivi','Séance protocole','Restitution bilan','Point parents','Appel téléphonique','Observation match','Autre'];
+const LIEUX=['Présentiel','Visio','Téléphone','Terrain / match','Autre'];
+const PROTOS=[['','—'],'D.I.P.S','S.O.T.A','Q.F.A.C','Smart Goals','Diagnostic 4 axes','Diagnostic Performer','Fiche identitaire'];
+const OFFRES=[
+ {n:'Bilan Mental Y.E.S.I'},
+ {n:'Accompagnement Y.E.S.I'},
+ {n:'SbSBs — Step by Step BUT Stronger',m:450,s:[250,100,100],mois:3},
+ {n:'Bilan Y.E.S.I Club (Collab 2)',m:200,mensuel:true},
+ {n:'Diagnostic Y.E.S.I Performer'},
+ {n:'Autre'}
+];
+
+let db=load();
+let state={tab:'home',benef:null,rdvFilter:'avenir',benefFilter:'actif',ctrFilter:'encours',q:''};
+let _rs='prevu',_ech=[];
+
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&Array.isArray(d.benef))return{benef:d.benef,contrats:d.contrats||[],rdv:d.rdv||[]}}catch(e){}return{benef:[],contrats:[],rdv:[]}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){toast('⚠ Erreur de sauvegarde')}}
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const todayStr=()=>ymd(new Date());
+const rdvDate=r=>new Date(r.date+'T'+(r.heure||'00:00'));
+const byDate=(a,b)=>rdvDate(a)-rdvDate(b);
+const JOURS=['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
+function fDate(s){if(!s)return'—';const d=new Date(s+'T12:00');if(isNaN(d))return s;return JOURS[d.getDay()]+' '+d.getDate()+'/'+pad(d.getMonth()+1)+'/'+String(d.getFullYear()).slice(2)}
+const fRdv=r=>fDate(r.date)+(r.heure?' · '+r.heure.replace(':','h'):'');
+const eur=n=>(Math.round((+n||0)*100)/100).toLocaleString('fr-FR')+' €';
+function addDays(s,n){const d=new Date(s+'T12:00');d.setDate(d.getDate()+n);return ymd(d)}
+function addMonths(s,n){const d=new Date(s+'T12:00');d.setMonth(d.getMonth()+n);return ymd(d)}
+const fullName=b=>((b.prenom||'')+' '+(b.nom||'')).trim();
+function bName(id){const b=db.benef.find(x=>x.id===id);return b?fullName(b):'(supprimé)'}
+const shortOffre=o=>(o||'').split(' — ')[0];
+function nextRdv(id){return db.rdv.filter(r=>r.benefId===id&&r.statut==='prevu'&&r.date>=todayStr()).sort(byDate)[0]}
+function activeContrat(id){return db.contrats.find(c=>c.benefId===id&&c.statut==='encours')}
+function cTotals(c){const ech=c.ech||[];const sum=ech.reduce((s,e)=>s+(+e.montant||0),0);const tot=+c.montant||sum;const paid=ech.filter(e=>e.paye).reduce((s,e)=>s+(+e.montant||0),0);const done=db.rdv.filter(r=>r.contratId===c.id&&r.statut==='fait').length;return{tot,paid,done}}
+
+function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',2200)}
+function openSheet(h){const s=$('#sheet');s.innerHTML='<div class="grab"></div>'+h;s.classList.add('open');$('#sbg').classList.add('open');s.scrollTop=0;document.body.style.overflow='hidden'}
+function closeSheet(){$('#sheet').classList.remove('open');$('#sbg').classList.remove('open');document.body.style.overflow=''}
+function dl(name,content,type){const b=new Blob([content],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)}
+
+/* champs de formulaire */
+const F=(id,lab,v='',type='text',extra='')=>`<label>${lab}</label><input id="f_${id}" type="${type}" value="${esc(v)}" ${extra}>`;
+const T=(id,lab,v='',ph='')=>`<label>${lab}</label><textarea id="f_${id}" placeholder="${esc(ph)}">${esc(v)}</textarea>`;
+const S=(id,lab,opts,v,extra='')=>`<label>${lab}</label><select id="f_${id}" ${extra}>${opts.map(o=>{const[k,l]=Array.isArray(o)?o:[o,o];return`<option value="${esc(k)}" ${String(k)===String(v??'')?'selected':''}>${esc(l)}</option>`}).join('')}</select>`;
+const V=id=>{const e=$('#f_'+id);return e?e.value.trim():''};
+const noteB=(l,t)=>t?`<div class="note"><b>${l}</b>${esc(t)}</div>`:'';
+
+/* ============ NAVIGATION ============ */
+function go(t,id){state.tab=t;state.benef=id||null;render();window.scrollTo(0,0)}
+function render(){
+ document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===state.tab));
+ let h='';
+ if(state.tab==='home')h=viewHome();
+ else if(state.tab==='benef')h=state.benef?viewBenefDetail(state.benef):viewBenefs();
+ else if(state.tab==='rdv')h=viewRdv();
+ else if(state.tab==='contrats')h=viewContrats();
+ else h=viewPlus();
+ $('#main').innerHTML=h;
+ $('#fab').style.display=state.tab==='plus'?'none':'block';
+ if(state.tab==='benef'&&!state.benef)renderBList();
+}
+function fab(){
+ if(state.tab==='benef')return state.benef?formRdv(null,{benefId:state.benef}):formBenef();
+ if(state.tab==='rdv')return formRdv();
+ if(state.tab==='contrats')return formContrat();
+ openSheet(`<h3>Ajouter</h3><div class="btns" style="flex-direction:column">
+ <button class="btn gold" onclick="formRdv()">📅 Nouveau RDV</button>
+ <button class="btn" onclick="formBenef()">👤 Nouveau bénéficiaire</button>
+ <button class="btn" onclick="formContrat()">📄 Nouveau contrat</button></div>`);
+}
+
+/* ============ ACCUEIL ============ */
+function alerts(){
+ const t=todayStr(),now=new Date(),out=[];
+ const A=(txt,sub,act,bad)=>out.push(`<div class="card tap alert ${bad?'bad':''}" onclick="${act}"><div class="t">${txt}</div><div class="m">${sub}</div></div>`);
+ db.rdv.filter(r=>r.statut==='prevu'&&new Date(rdvDate(r).getTime()+(+r.duree||60)*60000)<now).sort(byDate)
+  .forEach(r=>A('✎ Clôturer & noter : '+esc(bName(r.benefId)),fRdv(r)+' · '+esc(r.type),`openRdv('${r.id}')`));
+ db.rdv.filter(r=>r.statut==='fait'&&!r.cr).sort(byDate)
+  .forEach(r=>A('✎ Compte rendu manquant : '+esc(bName(r.benefId)),fRdv(r),`openRdv('${r.id}')`));
+ db.contrats.forEach(c=>{
+  if(c.statut==='resilie')return;
+  (c.ech||[]).forEach(e=>{if(!e.paye&&e.date&&e.date<=t)A('💶 Paiement attendu : '+esc(bName(c.benefId)),eur(e.montant)+' · échéance '+fDate(e.date)+' · '+esc(shortOffre(c.offre)),`openContrat('${c.id}')`,true)});
+  if(c.statut!=='encours')return;
+  if(c.fin&&c.fin<t)A('⏳ Contrat échu à clôturer : '+esc(bName(c.benefId)),esc(shortOffre(c.offre))+' · fin '+fDate(c.fin),`openContrat('${c.id}')`,true);
+  else if(c.fin&&c.fin<=addDays(t,14))A('⏳ Contrat bientôt terminé : '+esc(bName(c.benefId)),esc(shortOffre(c.offre))+' · fin '+fDate(c.fin)+' → prévoir renouvellement',`openContrat('${c.id}')`);
+  const{done}=cTotals(c);if(+c.seances&&done>=+c.seances)A('🔁 Séances épuisées : '+esc(bName(c.benefId)),done+'/'+c.seances+' séances · '+esc(shortOffre(c.offre)),`openContrat('${c.id}')`);
+ });
+ db.benef.filter(b=>b.statut==='actif'&&!nextRdv(b.id)).forEach(b=>A('📅 Aucun prochain RDV : '+esc(fullName(b)),'Appuie pour programmer',`formRdv(null,{benefId:'${b.id}'})`));
+ return out;
+}
+function viewHome(){
+ const t=todayStr(),in7=addDays(t,7);
+ if(!db.benef.length)return `<div class="card hello"><div class="t" style="color:var(--gold2)">Bienvenue dans ton suivi Y.E.S.I</div><div class="m" style="margin-top:6px">1. Ajoute un bénéficiaire<br>2. Crée son contrat (offre, échéancier)<br>3. Programme ses RDV et note le compte rendu après chaque séance</div><div class="btns"><button class="btn gold" onclick="formBenef()">+ Premier bénéficiaire</button><button class="btn" onclick="go('plus')">Importer une sauvegarde</button></div></div>`;
+ const actifs=db.benef.filter(b=>b.statut==='actif').length;
+ const ctr=db.contrats.filter(c=>c.statut==='encours').length;
+ const sem=db.rdv.filter(r=>r.statut==='prevu'&&r.date>=t&&r.date<=in7).length;
+ let du=0;db.contrats.forEach(c=>{if(c.statut!=='resilie')(c.ech||[]).forEach(e=>{if(!e.paye)du+=+e.montant||0})});
+ const today=db.rdv.filter(r=>r.date===t&&r.statut!=='annule').sort(byDate);
+ const next=db.rdv.filter(r=>r.statut==='prevu'&&r.date>t&&r.date<=in7).sort(byDate);
+ const al=alerts();
+ const le=lsGet(KEY+'_lastExport');
+ const backup=(!le||le<addDays(t,-7))?`<div class="card tap alert" onclick="go('plus')"><div class="t">💾 Pense à sauvegarder</div><div class="m">Dernière sauvegarde : ${le?fDate(le):'jamais'}</div></div>`:'';
+ return `<h2>Tableau de bord</h2><div class="stats">
+ <div class="stat"><b>${actifs}</b><span>Bénéficiaires actifs</span></div>
+ <div class="stat"><b>${ctr}</b><span>Contrats en cours</span></div>
+ <div class="stat"><b>${sem}</b><span>RDV sur 7 jours</span></div>
+ <div class="stat"><b>${eur(du)}</b><span>Reste à encaisser</span></div></div>
+ <h2>Aujourd’hui</h2>${today.length?today.map(r=>rdvCard(r)).join(''):'<div class="empty">Aucun RDV aujourd’hui</div>'}
+ <h2>À faire (${al.length})</h2>${backup}${al.length?al.join(''):'<div class="empty">Rien à signaler ✔</div>'}
+ <h2>7 prochains jours</h2>${next.length?next.map(r=>rdvCard(r)).join(''):'<div class="empty">Aucun RDV programmé</div>'}`;
+}
+
+/* ============ BÉNÉFICIAIRES ============ */
+function viewBenefs(){
+ const segs=[['actif','Actifs'],['prospect','Prospects'],['pause','Pause'],['termine','Terminés'],['tous','Tous']];
+ return `<h2>Bénéficiaires</h2><input id="bq" placeholder="🔍 Nom, club, poste…" value="${esc(state.q)}" oninput="state.q=this.value;renderBList()" style="margin-bottom:10px">
+ <div class="seg">${segs.map(([k,l])=>`<button class="${state.benefFilter===k?'on':''}" onclick="state.benefFilter='${k}';render()">${l} (${k==='tous'?db.benef.length:db.benef.filter(b=>b.statut===k).length})</button>`).join('')}</div><div id="blist"></div>`;
+}
+function renderBList(){
+ const q=state.q.toLowerCase().trim();
+ const l=db.benef.filter(b=>(state.benefFilter==='tous'||b.statut===state.benefFilter)&&(!q||[b.prenom,b.nom,b.club,b.poste,b.parent].join(' ').toLowerCase().includes(q))).sort((a,b)=>(a.prenom||'').localeCompare(b.prenom||''));
+ $('#blist').innerHTML=l.length?l.map(benefCard).join(''):`<div class="empty">${db.benef.length?'Aucun résultat':'Aucun bénéficiaire — appuie sur + pour en ajouter un'}</div>`;
+}
+function benefCard(b){
+ const n=nextRdv(b.id),c=activeContrat(b.id),[l,cl]=BSTAT[b.statut]||BSTAT.actif;
+ return `<div class="card tap" onclick="go('benef','${b.id}')"><div class="row"><div><div class="t">${esc(fullName(b))}</div><div class="m">${esc([b.categorie,b.poste,b.club].filter(Boolean).join(' · ')||b.domaine||'')}</div></div><span class="badge ${cl}">${l}</span></div>
+ <div class="m" style="margin-top:6px">📅 ${n?fRdv(n):(b.statut==='actif'?'<span style="color:var(--warn)">Pas de prochain RDV</span>':'—')}${c?' · 📄 '+esc(shortOffre(c.offre)):''}</div></div>`;
+}
+function viewBenefDetail(id){
+ const b=db.benef.find(x=>x.id===id);if(!b){state.benef=null;return viewBenefs()}
+ const t=todayStr(),rs=db.rdv.filter(r=>r.benefId===id);
+ const fut=rs.filter(r=>r.statut==='prevu'&&r.date>=t).sort(byDate);
+ const hist=rs.filter(r=>!fut.includes(r)).sort((a,c)=>rdvDate(c)-rdvDate(a));
+ const cs=db.contrats.filter(c=>c.benefId===id);
+ const last=hist.find(r=>r.statut==='fait');
+ const[l,cl]=BSTAT[b.statut]||BSTAT.actif;
+ const hasAx=AXES.some(a=>b[a.k]!==''&&b[a.k]!=null);
+ const contact=[b.tel&&`📞 <a href="tel:${esc(b.tel)}">${esc(b.tel)}</a>`,b.email&&`✉ <a href="mailto:${esc(b.email)}">${esc(b.email)}</a>`,b.parent&&`👪 ${esc(b.parent)}${b.parentTel?` · <a href="tel:${esc(b.parentTel)}">${esc(b.parentTel)}</a>`:''}${b.parentEmail?` · <a href="mailto:${esc(b.parentEmail)}">mail</a>`:''}`].filter(Boolean).join('<br>');
+ return `<button class="back" onclick="go('benef')">‹ Bénéficiaires</button>
+ <div class="card"><div class="row"><div><div class="t" style="font-size:19px">${esc(fullName(b))}</div><div class="m">${esc([b.domaine,b.categorie,b.poste,b.club].filter(Boolean).join(' · '))}</div></div><span class="badge ${cl}">${l}</span></div>
+ ${contact?`<div class="m" style="margin-top:8px">${contact}</div>`:''}
+ <div class="btns"><button class="btn gold sm" onclick="formRdv(null,{benefId:'${id}'})">+ RDV</button><button class="btn sm" onclick="formContrat(null,'${id}')">+ Contrat</button><button class="btn sm" onclick="formBenef('${id}')">✎ Fiche</button><button class="btn sm" onclick="openExport('benef','${id}')">⬇ Export</button></div></div>
+ ${last&&(last.objNext||last.devoirs)?`<div class="card alert"><div class="t">🎯 Pour le prochain RDV</div><div class="m">Suite à la séance du ${fDate(last.date)}</div>${noteB('OBJECTIF',last.objNext)}${noteB('TRAVAIL DONNÉ',last.devoirs)}</div>`:''}
+ ${b.objectifs?`<h2>Demande de départ</h2><div class="card"><div class="note" style="margin:0">${esc(b.objectifs)}</div></div>`:''}
+ ${hasAx?`<h2>Diagnostic Y.E.S.I</h2><div class="axes">${AXES.map(a=>`<div><b>${b[a.k]!==''&&b[a.k]!=null?esc(b[a.k]):'–'}</b><span>${a.l}</span></div>`).join('')}</div>`:''}
+ <h2>Prochains RDV</h2>${fut.length?fut.map(r=>rdvCard(r,false)).join(''):'<div class="empty">Aucun RDV programmé</div>'}
+ <h2>Contrats</h2>${cs.length?cs.map(c=>contratCard(c,false)).join(''):'<div class="empty">Aucun contrat</div>'}
+ <h2>Historique & comptes rendus (${hist.length})</h2>${hist.length?`<div class="tl">${hist.map(histCard).join('')}</div>`:'<div class="empty">Aucune séance passée</div>'}
+ ${b.notes?`<h2>Notes générales</h2><div class="card"><div class="note" style="margin:0">${esc(b.notes)}</div></div>`:''}
+ <div class="btns" style="margin-top:24px"><button class="btn sm bad" onclick="delBenef('${id}')">Supprimer ce bénéficiaire</button></div>`;
+}
+function histCard(r){
+ const late=r.statut==='prevu',[l,cl]=RSTAT[r.statut]||RSTAT.prevu;
+ return `<div class="card tap" onclick="openRdv('${r.id}')"><div class="row"><div><div class="t">${fRdv(r)}</div><div class="m">${esc(r.type)}${r.protocole?' · '+esc(r.protocole):''}${r.axe?' · '+esc(r.axe):''}${r.ressenti?' · ressenti '+esc(r.ressenti)+'/10':''}</div></div><span class="badge ${late?'b-warn':cl}">${late?'À clôturer':l}</span></div>
+ ${noteB('CE QUI S’EST DIT',r.cr)}${noteB('POINTS CLÉS',r.cles)}${noteB('TRAVAIL À FAIRE',r.devoirs)}${noteB('OBJECTIF PROCHAIN RDV',r.objNext)}</div>`;
+}
+function formBenef(id){
+ const b=id?db.benef.find(x=>x.id===id):{statut:'actif',domaine:'Football'};
+ openSheet(`<h3>${id?'Modifier la fiche':'Nouveau bénéficiaire'}</h3>
+ <div class="g2"><div>${F('prenom','Prénom *',b.prenom)}</div><div>${F('nom','Nom',b.nom)}</div></div>
+ <div class="g2"><div>${S('statut','Statut',Object.entries(BSTAT).map(([k,v])=>[k,v[0]]),b.statut)}</div><div>${S('domaine','Domaine',['Football','Autre sport','Scolaire','Professionnel','Autre'],b.domaine)}</div></div>
+ <div class="g2"><div>${F('categorie','Âge / catégorie',b.categorie,'text','placeholder="U17, 11 ans, 5e…"')}</div><div>${F('poste','Poste / rôle',b.poste)}</div></div>
+ ${F('club','Club / établissement',b.club)}
+ <div class="g2"><div>${F('tel','Téléphone',b.tel,'tel')}</div><div>${F('email','Email',b.email,'email')}</div></div>
+ ${F('parent','Parent / référent',b.parent)}
+ <div class="g2"><div>${F('parentTel','Tél. parent',b.parentTel,'tel')}</div><div>${F('parentEmail','Email parent',b.parentEmail,'email')}</div></div>
+ ${F('source','Origine (comment il est arrivé)',b.source)}
+ ${T('objectifs','Demande de départ / objectifs',b.objectifs)}
+ <label>Diagnostic Y.E.S.I (/10)</label><div class="axes">${AXES.map(a=>`<div><input id="f_${a.k}" type="number" inputmode="decimal" min="0" max="10" step="0.5" value="${esc(b[a.k]??'')}" style="text-align:center;padding:8px 2px"><span>${a.l}</span></div>`).join('')}</div>
+ ${T('notes','Notes générales',b.notes)}
+ <div class="btns"><button class="btn" onclick="closeSheet()">Annuler</button><button class="btn gold" onclick="saveBenef('${id||''}')">Enregistrer</button></div>`);
+}
+function saveBenef(id){
+ if(!V('prenom'))return toast('Prénom obligatoire');
+ const b=id?db.benef.find(x=>x.id===id):{id:uid(),cree:todayStr()};
+ ['prenom','nom','statut','domaine','categorie','poste','club','tel','email','parent','parentTel','parentEmail','source','objectifs','notes','y','e','s','i'].forEach(k=>b[k]=V(k));
+ if(!id)db.benef.push(b);
+ save();closeSheet();toast('Fiche enregistrée');go('benef',b.id);
+}
+function delBenef(id){
+ const n=db.rdv.filter(r=>r.benefId===id).length,c=db.contrats.filter(x=>x.benefId===id).length;
+ if(!confirm(`Supprimer ${bName(id)} ainsi que ses ${n} RDV et ${c} contrat(s) ? Action définitive.`))return;
+ db.benef=db.benef.filter(b=>b.id!==id);db.rdv=db.rdv.filter(r=>r.benefId!==id);db.contrats=db.contrats.filter(x=>x.benefId!==id);
+ save();toast('Supprimé');go('benef');
+}
+
+/* ============ RDV ============ */
+function rdvCard(r,name=true){
+ const[l,cl]=RSTAT[r.statut]||RSTAT.prevu;
+ return `<div class="card tap" onclick="openRdv('${r.id}')"><div class="row"><div><div class="t">${name?esc(bName(r.benefId)):fRdv(r)}</div><div class="m">${name?fRdv(r)+' · ':''}${esc(r.type)} · ${esc(r.lieu||'')}${r.protocole?' · '+esc(r.protocole):''}</div></div><span class="badge ${cl}">${l}</span></div>
+ ${r.objectif&&r.statut==='prevu'?`<div class="m" style="margin-top:6px">🎯 ${esc(r.objectif)}</div>`:''}
+ ${r.statut==='fait'&&!r.cr?'<div class="m" style="color:var(--warn);margin-top:6px">✎ Compte rendu à écrire</div>':''}</div>`;
+}
+function viewRdv(){
+ const f=state.rdvFilter,t=todayStr();let l=db.rdv.slice();
+ if(f==='avenir')l=l.filter(r=>r.date>=t&&r.statut==='prevu').sort(byDate);
+ else if(f==='passes')l=l.filter(r=>!(r.date>=t&&r.statut==='prevu')).sort((a,b)=>rdvDate(b)-rdvDate(a));
+ else l.sort((a,b)=>rdvDate(b)-rdvDate(a));
+ let h='',last='';
+ l.forEach(r=>{if(r.date!==last){h+=`<div class="m" style="margin:14px 0 6px;color:var(--gold);font-weight:600">${fDate(r.date)}${r.date===t?' — aujourd’hui':''}</div>`;last=r.date}h+=rdvCard(r)});
+ return `<h2>Rendez-vous</h2><div class="seg">${[['avenir','À venir'],['passes','Passés'],['tous','Tous']].map(([k,lb])=>`<button class="${f===k?'on':''}" onclick="state.rdvFilter='${k}';render()">${lb}</button>`).join('')}</div>${h||'<div class="empty">Aucun RDV</div>'}`;
+}
+function formRdv(id,p={}){
+ if(!db.benef.length){toast('Ajoute d’abord un bénéficiaire');return formBenef()}
+ const r=id?db.rdv.find(x=>x.id===id):Object.assign({date:todayStr(),heure:'18:00',duree:60,type:'Séance de suivi',lieu:'Présentiel',statut:'prevu',benefId:state.benef||''},p);
+ const bs=db.benef.filter(b=>b.statut!=='termine'||b.id===r.benefId).sort((a,b)=>(a.prenom||'').localeCompare(b.prenom||''));
+ if(!r.benefId&&bs[0])r.benefId=bs[0].id;
+ openSheet(`<h3>${id?'Modifier le RDV':'Programmer un RDV'}</h3>
+ ${S('benefId','Bénéficiaire',bs.map(b=>[b.id,fullName(b)]),r.benefId,'onchange="refreshContratSel()"')}
+ <div class="g2"><div>${F('date','Date',r.date,'date')}</div><div>${F('heure','Heure',r.heure,'time')}</div></div>
+ <div class="g2"><div>${S('type','Type',TYPES,r.type)}</div><div>${F('duree','Durée (min)',r.duree,'number','inputmode="numeric"')}</div></div>
+ <div class="g2"><div>${S('lieu','Lieu',LIEUX,r.lieu)}</div><div>${S('protocole','Protocole',PROTOS,r.protocole||'')}</div></div>
+ <label>Contrat lié (compte les séances)</label><select id="f_contratId"></select>
+ ${T('objectif','Objectif de la séance',r.objectif,'Ce que je veux travailler…')}
+ ${id?S('statut','Statut',Object.entries(RSTAT).map(([k,v])=>[k,v[0]]),r.statut):''}
+ <div class="btns"><button class="btn" onclick="closeSheet()">Annuler</button><button class="btn gold" onclick="saveRdv('${id||''}')">${id?'Enregistrer':'Programmer'}</button></div>`);
+ refreshContratSel(r.contratId);
+}
+function refreshContratSel(sel){
+ const bid=V('benefId'),cs=db.contrats.filter(c=>c.benefId===bid);
+ if(sel===undefined){const a=cs.find(c=>c.statut==='encours');sel=a?a.id:''}
+ $('#f_contratId').innerHTML='<option value="">— Aucun —</option>'+cs.map(c=>`<option value="${c.id}" ${c.id===sel?'selected':''}>${esc(shortOffre(c.offre))} · ${CSTAT[c.statut]?CSTAT[c.statut][0]:''}</option>`).join('');
+}
+function saveRdv(id){
+ if(!V('benefId'))return toast('Choisis un bénéficiaire');
+ if(!V('date'))return toast('Date obligatoire');
+ const r=id?db.rdv.find(x=>x.id===id):{id:uid(),statut:'prevu'};
+ ['benefId','date','heure','type','duree','lieu','protocole','contratId','objectif'].forEach(k=>r[k]=V(k));
+ if(id&&$('#f_statut'))r.statut=V('statut');
+ if(!id)db.rdv.push(r);
+ save();render();
+ if(id){closeSheet();toast('RDV modifié');return}
+ openSheet(`<h3>✔ RDV programmé</h3><div class="m">${esc(bName(r.benefId))} · ${fRdv(r)} · ${esc(r.type)}</div>
+ <div class="btns" style="flex-direction:column"><button class="btn gold" onclick="icsOne('${r.id}')">📅 Ajouter à l’agenda du téléphone</button><button class="btn" onclick="closeSheet()">Fermer</button></div>`);
+}
+function openRdv(id){
+ const r=db.rdv.find(x=>x.id===id);if(!r)return;
+ const b=db.benef.find(x=>x.id===r.benefId)||{},c=db.contrats.find(x=>x.id===r.contratId);
+ _rs=(r.statut==='prevu'&&rdvDate(r)<new Date())?'fait':r.statut;
+ const mail=b.parentEmail||b.email;
+ openSheet(`<h3>${esc(bName(r.benefId))}</h3>
+ <div class="m">${fRdv(r)} · ${esc(r.duree||60)} min · ${esc(r.type)} · ${esc(r.lieu||'')}${r.protocole?' · '+esc(r.protocole):''}${c?'<br>📄 '+esc(shortOffre(c.offre)):''}</div>
+ ${noteB('OBJECTIF DE LA SÉANCE',r.objectif)}
+ <label>Statut</label><div class="seg" id="rs">${Object.entries(RSTAT).map(([k,v])=>`<button data-k="${k}" class="${_rs===k?'on':''}" onclick="setRs('${k}')">${v[0]}</button>`).join('')}</div>
+ <h2 style="margin-top:16px">Compte rendu</h2>
+ ${T('cr','Ce qui s’est dit',r.cr,'Échanges, ressentis exprimés, situations évoquées…')}
+ ${T('cles','Points clés / prises de conscience',r.cles)}
+ ${T('devoirs','Travail à faire d’ici le prochain RDV',r.devoirs)}
+ <div class="g2"><div>${S('axe','Axe travaillé',[['','—'],...AXES.map(a=>a.l)],r.axe||'')}</div>
+ <div><label>Ressenti séance : <b id="rv">${r.ressenti?esc(r.ressenti):'—'}</b>/10</label><input id="f_ressenti" type="range" min="1" max="10" value="${esc(r.ressenti||5)}" oninput="this.dataset.t=1;$('#rv').textContent=this.value" style="padding:0;height:44px;border:0;background:none;accent-color:var(--gold)"></div></div>
+ ${T('objNext','Objectif du prochain RDV',r.objNext)}
+ <div class="btns"><button class="btn" onclick="saveCR('${id}')">Enregistrer</button><button class="btn gold" onclick="saveCR('${id}',1)">Enregistrer + prochain RDV</button></div>
+ <div class="btns"><button class="btn sm" onclick="formRdv('${id}')">✎ Modifier</button><button class="btn sm" onclick="icsOne('${id}')">📅 Agenda</button><button class="btn sm" onclick="if(persistCR('${id}'))openExport('rdv','${id}')">⬇ Export</button>${mail?`<button class="btn sm" onclick="mailCR('${id}')">✉ Résumé</button>`:''}<button class="btn sm bad" onclick="delRdv('${id}')">Supprimer</button></div>`);
+}
+function setRs(k){_rs=k;document.querySelectorAll('#rs button').forEach(x=>x.classList.toggle('on',x.dataset.k===k))}
+function persistCR(id){
+ const r=db.rdv.find(x=>x.id===id);if(!r)return null;
+ ['cr','cles','devoirs','axe','objNext'].forEach(k=>r[k]=V(k));
+ const rg=$('#f_ressenti');if(rg&&(rg.dataset.t||r.ressenti))r.ressenti=rg.value;
+ r.statut=_rs;save();render();return r;
+}
+function saveCR(id,next){
+ const r=persistCR(id);if(!r)return;
+ if(!next){closeSheet();toast('Compte rendu enregistré');return}
+ const base=r.date<todayStr()?todayStr():r.date;
+ formRdv(null,{benefId:r.benefId,date:addDays(base,7),heure:r.heure,duree:r.duree,type:'Séance de suivi',lieu:r.lieu,protocole:r.protocole,objectif:r.objNext,contratId:r.contratId||''});
+ toast('Compte rendu enregistré');
+}
+function mailCR(id){
+ const r=db.rdv.find(x=>x.id===id),b=db.benef.find(x=>x.id===r.benefId)||{};
+ const dev=V('devoirs')||r.devoirs,obj=V('objNext')||r.objNext,axe=V('axe')||r.axe,n=nextRdv(r.benefId);
+ const body=`Bonjour,\n\nVoici le résumé de la séance Y.E.S.I de ${b.prenom||''} du ${fDate(r.date)}.\n\n`+(axe?`Axe travaillé : ${axe}\n\n`:'')+(dev?`Travail à faire d'ici la prochaine séance :\n${dev}\n\n`:'')+(obj?`Objectif de la prochaine séance :\n${obj}\n\n`:'')+(n&&n.id!==r.id?`Prochain rendez-vous : ${fRdv(n)}\n\n`:'')+`Sportivement,\nY.E.S.I CONCEPT`;
+ location.href=`mailto:${encodeURIComponent(b.parentEmail||b.email)}?subject=${encodeURIComponent('Suivi Y.E.S.I — séance du '+fDate(r.date))}&body=${encodeURIComponent(body)}`;
+}
+function delRdv(id){if(!confirm('Supprimer ce RDV et son compte rendu ?'))return;db.rdv=db.rdv.filter(r=>r.id!==id);save();closeSheet();render();toast('RDV supprimé')}
+
+/* ============ CONTRATS ============ */
+function contratCard(c,name=true){
+ const{tot,paid,done}=cTotals(c),[l,cl]=CSTAT[c.statut]||CSTAT.encours;
+ return `<div class="card tap" onclick="openContrat('${c.id}')"><div class="row"><div><div class="t">${name?esc(bName(c.benefId)):esc(shortOffre(c.offre))}</div><div class="m">${name?esc(shortOffre(c.offre))+' · ':''}${fDate(c.debut)} → ${fDate(c.fin)}</div></div><span class="badge ${cl}">${l}</span></div>
+ <div class="m" style="margin-top:6px">Séances ${done}${+c.seances?'/'+esc(c.seances):''} · Payé ${eur(paid)} / ${eur(tot)}</div>
+ ${+c.seances?`<div class="bar"><i style="width:${Math.min(100,done/c.seances*100)}%"></i></div>`:''}</div>`;
+}
+function viewContrats(){
+ const f=state.ctrFilter;
+ const l=db.contrats.filter(c=>f==='tous'||c.statut===f).sort((a,b)=>(b.debut||'').localeCompare(a.debut||''));
+ let enc=0,att=0;db.contrats.filter(c=>c.statut!=='resilie').forEach(c=>(c.ech||[]).forEach(e=>e.paye?enc+=+e.montant||0:att+=+e.montant||0));
+ return `<h2>Contrats</h2><div class="stats" style="margin-bottom:12px"><div class="stat"><b>${eur(enc)}</b><span>Encaissé</span></div><div class="stat"><b>${eur(att)}</b><span>Reste à encaisser</span></div></div>
+ <div class="seg">${[['encours','En cours'],['attente','En attente'],['termine','Terminés'],['tous','Tous']].map(([k,lb])=>`<button class="${f===k?'on':''}" onclick="state.ctrFilter='${k}';render()">${lb}</button>`).join('')}</div>
+ ${l.length?l.map(c=>contratCard(c)).join(''):'<div class="empty">Aucun contrat</div>'}`;
+}
+function openContrat(id){
+ const c=db.contrats.find(x=>x.id===id);if(!c)return;
+ const{tot,paid,done}=cTotals(c),[l,cl]=CSTAT[c.statut]||CSTAT.encours,t=todayStr();
+ openSheet(`<h3>${esc(c.offre)}</h3>${c.detail?`<div class="m">${esc(c.detail)}</div>`:''}
+ <div class="m" style="margin-top:4px"><a href="#" onclick="closeSheet();go('benef','${c.benefId}');return false">👤 ${esc(bName(c.benefId))}</a> · <span class="badge ${cl}">${l}</span></div>
+ <div class="m" style="margin-top:8px">Du ${fDate(c.debut)} au ${fDate(c.fin)}</div>
+ <label>Séances réalisées : ${done}${+c.seances?' / '+esc(c.seances):''}</label>${+c.seances?`<div class="bar"><i style="width:${Math.min(100,done/c.seances*100)}%"></i></div>`:''}
+ <label>Paiements : ${eur(paid)} / ${eur(tot)}</label><div class="bar"><i style="width:${tot?Math.min(100,paid/tot*100):0}%"></i></div>
+ <div class="card" style="margin-top:12px">${(c.ech||[]).length?c.ech.map((e,i)=>`<div class="pay"><input type="checkbox" ${e.paye?'checked':''} onchange="togglePay('${id}',${i})"><div style="flex:1">${fDate(e.date)}${!e.paye&&e.date&&e.date<=t?' <span class="badge b-bad">en retard</span>':''}</div><b>${eur(e.montant)}</b></div>`).join(''):'<div class="m">Aucune échéance — ajoute-les via Modifier</div>'}</div>
+ ${noteB('NOTES / CONDITIONS',c.notes)}
+ <div class="btns"><button class="btn gold" onclick="formContrat('${id}')">✎ Modifier</button><button class="btn" onclick="formRdv(null,{benefId:'${c.benefId}',contratId:'${id}'})">+ RDV</button><button class="btn" onclick="openExport('contrat','${id}')">⬇ Export</button></div>
+ <div class="btns"><button class="btn sm bad" onclick="delContrat('${id}')">Supprimer le contrat</button></div>`);
+}
+function togglePay(cid,i){const c=db.contrats.find(x=>x.id===cid);c.ech[i].paye=!c.ech[i].paye;save();render();openContrat(cid);toast(c.ech[i].paye?'Paiement encaissé ✔':'Paiement remis en attente')}
+function formContrat(id,bid){
+ if(!db.benef.length){toast('Ajoute d’abord un bénéficiaire');return formBenef()}
+ const c=id?db.contrats.find(x=>x.id===id):{benefId:bid||state.benef||'',offre:OFFRES[0].n,debut:todayStr(),statut:'encours',ech:[]};
+ const bs=db.benef.slice().sort((a,b)=>(a.prenom||'').localeCompare(b.prenom||''));
+ if(!c.benefId)c.benefId=bs[0].id;
+ _ech=JSON.parse(JSON.stringify(c.ech||[]));
+ openSheet(`<h3>${id?'Modifier le contrat':'Nouveau contrat'}</h3>
+ ${S('benefId','Bénéficiaire',bs.map(b=>[b.id,fullName(b)]),c.benefId)}
+ ${S('offre','Offre',OFFRES.map(o=>o.n),c.offre,'onchange="onOffre()"')}
+ ${F('detail','Précision (formule, nb de mois…)',c.detail)}
+ <div class="g2"><div>${F('debut','Début',c.debut,'date')}</div><div>${F('fin','Fin',c.fin,'date')}</div></div>
+ <div class="g2"><div>${F('seances','Nb séances prévues',c.seances,'number','inputmode="numeric"')}</div><div>${F('montant','Montant total (€)',c.montant,'number','step="0.01" inputmode="decimal"')}</div></div>
+ ${S('statut','Statut',Object.entries(CSTAT).map(([k,v])=>[k,v[0]]),c.statut)}
+ <label>Échéancier (case cochée = payé)</label><div class="card" id="echBox" style="margin-bottom:8px"></div>
+ <button class="btn sm" onclick="addEch()">+ Échéance</button>
+ ${T('notes','Notes / conditions',c.notes)}
+ <div class="btns"><button class="btn" onclick="closeSheet()">Annuler</button><button class="btn gold" onclick="saveContrat('${id||''}')">Enregistrer</button></div>`);
+ renderEch();
+}
+function renderEch(){
+ $('#echBox').innerHTML=_ech.length?_ech.map((e,i)=>`<div class="pay"><input type="checkbox" ${e.paye?'checked':''} onchange="_ech[${i}].paye=this.checked"><input type="date" value="${esc(e.date||'')}" oninput="_ech[${i}].date=this.value" style="flex:1.4"><input type="number" step="0.01" inputmode="decimal" placeholder="€" value="${esc(e.montant)}" oninput="_ech[${i}].montant=this.value" style="flex:1"><button class="btn sm bad" onclick="_ech.splice(${i},1);renderEch()">✕</button></div>`).join(''):'<div class="m">Aucune échéance</div>';
+}
+function addEch(){const last=_ech[_ech.length-1];_ech.push({date:last&&last.date?addMonths(last.date,1):(V('debut')||todayStr()),montant:'',paye:false});renderEch()}
+function onOffre(){
+ const o=OFFRES.find(x=>x.n===V('offre'));if(!o)return;const d=V('debut')||todayStr();
+ if(o.m&&!V('montant')&&!o.mensuel)$('#f_montant').value=o.m;
+ if(o.mois&&!V('fin'))$('#f_fin').value=addMonths(d,o.mois);
+ if(!_ech.length){
+  if(o.s)_ech=o.s.map((m,i)=>({date:addMonths(d,i),montant:m,paye:false}));
+  else if(o.mensuel)_ech=[{date:d,montant:o.m,paye:false}];
+  renderEch();
+ }
+}
+function saveContrat(id){
+ if(!V('benefId'))return toast('Choisis un bénéficiaire');
+ const c=id?db.contrats.find(x=>x.id===id):{id:uid(),cree:todayStr()};
+ ['benefId','offre','detail','debut','fin','seances','montant','statut','notes'].forEach(k=>c[k]=V(k));
+ c.ech=_ech.filter(e=>e.montant!==''||e.date).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+ if(!c.montant&&c.ech.length)c.montant=String(c.ech.reduce((s,e)=>s+(+e.montant||0),0));
+ if(!id)db.contrats.push(c);
+ save();render();openContrat(c.id);toast('Contrat enregistré');
+}
+function delContrat(id){if(!confirm('Supprimer ce contrat ? (les RDV restent)'))return;db.contrats=db.contrats.filter(c=>c.id!==id);db.rdv.forEach(r=>{if(r.contratId===id)r.contratId=''});save();closeSheet();render();toast('Contrat supprimé')}
+
+/* ============ AGENDA .ICS ============ */
+const icsTxt=s=>String(s||'').replace(/\\/g,'\\\\').replace(/\r?\n/g,'\\n').replace(/[,;]/g,m=>'\\'+m);
+function icsEvent(r){
+ const s=rdvDate(r),e=new Date(s.getTime()+(+r.duree||60)*60000);
+ const f=d=>d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'T'+pad(d.getHours())+pad(d.getMinutes())+'00';
+ const stamp=new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+ return['BEGIN:VEVENT','UID:'+r.id+'@yesi-concept','DTSTAMP:'+stamp,'DTSTART:'+f(s),'DTEND:'+f(e),'SUMMARY:'+icsTxt('Y.E.S.I — '+bName(r.benefId)+' ('+r.type+')'),'LOCATION:'+icsTxt(r.lieu),'DESCRIPTION:'+icsTxt((r.protocole?'Protocole : '+r.protocole+'\n':'')+(r.objectif?'Objectif : '+r.objectif:'')),'BEGIN:VALARM','TRIGGER:-PT1H','ACTION:DISPLAY','DESCRIPTION:Rappel RDV Y.E.S.I','END:VALARM','END:VEVENT'].join('\r\n');
+}
+const icsWrap=evs=>['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//YESI CONCEPT//Suivi Pro//FR','CALSCALE:GREGORIAN',...evs,'END:VCALENDAR'].join('\r\n');
+function icsOne(id){const r=db.rdv.find(x=>x.id===id);if(!r)return;dl('rdv-'+bName(r.benefId).replace(/\s+/g,'-')+'-'+r.date+'.ics',icsWrap([icsEvent(r)]),'text/calendar')}
+function icsAll(){const l=db.rdv.filter(r=>r.statut==='prevu'&&r.date>=todayStr());if(!l.length)return toast('Aucun RDV à venir');dl('rdv-yesi-a-venir.ics',icsWrap(l.map(icsEvent)),'text/calendar');toast(l.length+' RDV exportés')}
+
+/* ============ EXPORT DOCUMENTS PDF / HTML ============ */
+function docWrap(title,sub,body){
+ return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>
+@page{size:A4;margin:14mm}
+*{box-sizing:border-box}
+body{margin:0;background:#f6f1e6;color:#1d1a12;font:13px/1.5 -apple-system,system-ui,"Segoe UI",Roboto,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.page{max-width:800px;margin:0 auto;background:#fff;padding:28px 24px 80px}
+.hd{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;border-bottom:3px solid #c9a24a;padding-bottom:12px;margin-bottom:18px}
+.logo{font-weight:800;letter-spacing:2px;color:#0e0d0b;font-size:18px}.logo span{color:#b08a35}
+.hd small{color:#7a705c;font-size:11px;display:block}
+h1{font-size:20px;margin:0 0 2px}.sub{color:#7a705c;margin-bottom:14px}
+h2{font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:#b08a35;border-bottom:1px solid #e8dcc0;padding-bottom:4px;margin:20px 0 10px;break-after:avoid}
+table{width:100%;border-collapse:collapse}
+td,th{padding:6px 8px;border-bottom:1px solid #eee5d0;text-align:left;vertical-align:top}
+th{background:#f6f1e6;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:#7a705c}
+tr{break-inside:avoid}
+.kv td:first-child{width:38%;color:#7a705c}
+.box{border:1px solid #e8dcc0;border-radius:8px;padding:10px 12px;margin-bottom:10px;break-inside:avoid;page-break-inside:avoid}
+.box .t{font-weight:700}.m{color:#7a705c;font-size:12px}
+.n{white-space:pre-wrap;margin-top:7px}.n b{display:block;font-size:10px;letter-spacing:.8px;color:#b08a35}
+.axes{display:flex;gap:8px}.axes div{flex:1;text-align:center;border:1px solid #e8dcc0;border-radius:8px;padding:8px 4px}
+.axes b{display:block;font-size:20px;color:#b08a35}.axes span{font-size:10px;color:#7a705c}
+.badge{display:inline-block;font-size:10px;padding:1px 7px;border-radius:10px;border:1px solid #c9a24a;color:#8a6a22;font-weight:600}
+.ft{margin-top:26px;border-top:1px solid #e8dcc0;padding-top:8px;color:#9a907a;font-size:10px;text-align:center}
+.pbtn{position:fixed;right:14px;bottom:14px;background:#c9a24a;color:#1a1408;border:0;border-radius:24px;padding:12px 18px;font-weight:700;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+@media print{body{background:#fff}.page{padding:0;max-width:none}.pbtn{display:none}}
+</style></head><body><div class="page">
+<div class="hd"><div><div class="logo">Y.E.S.I <span>CONCEPT</span></div><small>Yes Attitude · Estime de soi · Smart Goals · Investissement</small></div><small>Édité le ${fDate(todayStr())}</small></div>
+<h1>${esc(title)}</h1><div class="sub">${sub}</div>${body}
+<div class="ft">Y.E.S.I CONCEPT — Document confidentiel — yesiconcept.rdv@gmail.com</div></div>
+<button class="pbtn" onclick="window.print()">⬇ Enregistrer en PDF</button></body></html>`;
+}
+const kv=rows=>`<table class="kv">${rows.filter(r=>r[1]).map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table>`;
+const nb=(l,t)=>t?`<div class="n"><b>${l}</b>${esc(t)}</div>`:'';
+function crBox(r,showName,share){
+ const[l]=RSTAT[r.statut]||RSTAT.prevu;
+ const meta=[r.lieu,r.protocole,r.axe&&'Axe : '+r.axe,!share&&r.ressenti&&'Ressenti '+r.ressenti+'/10'].filter(Boolean).join(' · ');
+ return `<div class="box"><div class="t">${showName?esc(bName(r.benefId))+' — ':''}${fRdv(r)} · ${esc(r.type)} <span class="badge">${l}</span></div>${meta?`<div class="m">${esc(meta)}</div>`:''}
+ ${nb('OBJECTIF DE LA SÉANCE',r.objectif)}${share?'':nb('CE QUI S’EST DIT',r.cr)+nb('POINTS CLÉS / PRISES DE CONSCIENCE',r.cles)}${nb('TRAVAIL À FAIRE',r.devoirs)}${nb('OBJECTIF DU PROCHAIN RDV',r.objNext)}</div>`;
+}
+function ctrBox(c){
+ const{tot,paid,done}=cTotals(c),[l]=CSTAT[c.statut]||CSTAT.encours;
+ return `<div class="box"><div class="t">${esc(c.offre)} <span class="badge">${l}</span></div><div class="m">${c.detail?esc(c.detail)+' · ':''}Du ${fDate(c.debut)} au ${fDate(c.fin)} · Séances ${done}${+c.seances?' / '+esc(c.seances):''} · Payé ${eur(paid)} / ${eur(tot)}</div>
+ ${(c.ech||[]).length?`<table style="margin-top:6px"><tr><th>Échéance</th><th>Montant</th><th>Statut</th></tr>${c.ech.map(e=>`<tr><td>${fDate(e.date)}</td><td>${eur(e.montant)}</td><td>${e.paye?'Payé':'En attente'}</td></tr>`).join('')}</table>`:''}${nb('NOTES / CONDITIONS',c.notes)}</div>`;
+}
+function docBenef(id,share){
+ const b=db.benef.find(x=>x.id===id),t=todayStr();
+ const rs=db.rdv.filter(r=>r.benefId===id).sort(byDate);
+ const done=rs.filter(r=>r.statut==='fait'),fut=rs.filter(r=>r.statut==='prevu'&&r.date>=t);
+ const hist=rs.filter(r=>!fut.includes(r)&&r.statut!=='annule');
+ const res=done.filter(r=>r.ressenti).map(r=>+r.ressenti);
+ const cs=db.contrats.filter(c=>c.benefId===id);
+ const hasAx=AXES.some(a=>b[a.k]!==''&&b[a.k]!=null);
+ let body=`<h2>Identité</h2>${kv([['Statut',(BSTAT[b.statut]||BSTAT.actif)[0]],['Domaine',esc(b.domaine)],['Âge / catégorie',esc(b.categorie)],['Poste / rôle',esc(b.poste)],['Club / établissement',esc(b.club)],
+  ...(share?[]:[['Téléphone',esc(b.tel)],['Email',esc(b.email)],['Parent / référent',esc([b.parent,b.parentTel,b.parentEmail].filter(Boolean).join(' · '))],['Origine',esc(b.source)]]),['Suivi depuis',b.cree?fDate(b.cree):'']])}`;
+ if(b.objectifs)body+=`<h2>Demande de départ</h2><div class="box"><div class="n" style="margin:0">${esc(b.objectifs)}</div></div>`;
+ if(hasAx)body+=`<h2>Diagnostic Y.E.S.I (/10)</h2><div class="axes">${AXES.map(a=>`<div><b>${b[a.k]!==''&&b[a.k]!=null?esc(b[a.k]):'–'}</b><span>${a.l}</span></div>`).join('')}</div>`;
+ body+=`<h2>Synthèse du suivi</h2>${kv([['Séances réalisées',String(done.length)],['Absences',String(rs.filter(r=>r.statut==='absent').length)],...(share?[]:[['Ressenti moyen',res.length?(res.reduce((a,c)=>a+c,0)/res.length).toFixed(1)+' / 10':'']]),['Prochain RDV',fut[0]?fRdv(fut[0]):'—']])}`;
+ if(!share&&cs.length)body+=`<h2>Contrats</h2>${cs.map(ctrBox).join('')}`;
+ body+=`<h2>${share?'Séances':'Historique & comptes rendus'}</h2>${hist.length?hist.map(r=>crBox(r,false,share)).join(''):'<div class="m">Aucune séance</div>'}`;
+ if(!share&&b.notes)body+=`<h2>Notes générales</h2><div class="box"><div class="n" style="margin:0">${esc(b.notes)}</div></div>`;
+ return docWrap((share?'Bilan de suivi — ':'Dossier — ')+fullName(b),share?'Document de suivi à destination du bénéficiaire et de sa famille':'Dossier bénéficiaire complet — usage interne',body);
+}
+function docRdv(id,share){
+ const r=db.rdv.find(x=>x.id===id),c=db.contrats.find(x=>x.id===r.contratId),n=nextRdv(r.benefId);
+ let body=crBox(r,false,share);
+ body+=`<h2>Suite</h2>${kv([['Prochain RDV',n&&n.id!==r.id?fRdv(n)+' · '+esc(n.type):'À programmer'],...(c&&!share?[['Contrat',esc(c.offre)+' · séances '+cTotals(c).done+(+c.seances?' / '+esc(c.seances):'')]]:[])])}`;
+ return docWrap('Compte rendu — '+bName(r.benefId),fRdv(r)+' · '+esc(r.type),body);
+}
+function docContrat(id){
+ const c=db.contrats.find(x=>x.id===id),b=db.benef.find(x=>x.id===c.benefId)||{};
+ const rs=db.rdv.filter(r=>r.contratId===id).sort(byDate);
+ let body=`<h2>Bénéficiaire</h2>${kv([['Nom',esc(fullName(b))],['Âge / catégorie',esc(b.categorie)],['Club / établissement',esc(b.club)],['Parent / référent',esc(b.parent)]])}<h2>Contrat</h2>${ctrBox(c)}`;
+ body+=`<h2>Séances liées (${rs.length})</h2>${rs.length?`<table><tr><th>Date</th><th>Type</th><th>Statut</th></tr>${rs.map(r=>`<tr><td>${fRdv(r)}</td><td>${esc(r.type)}</td><td>${(RSTAT[r.statut]||RSTAT.prevu)[0]}</td></tr>`).join('')}</table>`:'<div class="m">Aucune séance liée</div>'}`;
+ return docWrap('Contrat — '+fullName(b),esc(c.offre),body);
+}
+function docGlobal(){
+ const t=todayStr(),act=db.benef.filter(b=>b.statut==='actif').sort((a,b)=>(a.prenom||'').localeCompare(b.prenom||''));
+ const fut=db.rdv.filter(r=>r.statut==='prevu'&&r.date>=t).sort(byDate);
+ const cs=db.contrats.filter(c=>c.statut==='encours');
+ let enc=0,att=0;const late=[];
+ db.contrats.filter(c=>c.statut!=='resilie').forEach(c=>(c.ech||[]).forEach(e=>{if(e.paye)enc+=+e.montant||0;else{att+=+e.montant||0;late.push({c,e})}}));
+ late.sort((a,b)=>(a.e.date||'').localeCompare(b.e.date||''));
+ let body=`<h2>Chiffres clés</h2>${kv([['Bénéficiaires actifs',String(act.length)],['Contrats en cours',String(cs.length)],['Séances réalisées (total)',String(db.rdv.filter(r=>r.statut==='fait').length)],['RDV à venir',String(fut.length)],['Encaissé',eur(enc)],['Reste à encaisser',eur(att)]])}`;
+ body+=`<h2>Bénéficiaires actifs</h2>${act.length?`<table><tr><th>Nom</th><th>Profil</th><th>Prochain RDV</th><th>Contrat</th></tr>${act.map(b=>{const n=nextRdv(b.id),c=activeContrat(b.id);return`<tr><td>${esc(fullName(b))}</td><td>${esc([b.categorie,b.club].filter(Boolean).join(' · '))}</td><td>${n?fRdv(n):'—'}</td><td>${c?esc(shortOffre(c.offre)):'—'}</td></tr>`}).join('')}</table>`:'<div class="m">Aucun</div>'}`;
+ body+=`<h2>RDV à venir</h2>${fut.length?`<table><tr><th>Date</th><th>Bénéficiaire</th><th>Type</th><th>Objectif</th></tr>${fut.map(r=>`<tr><td>${fRdv(r)}</td><td>${esc(bName(r.benefId))}</td><td>${esc(r.type)}</td><td>${esc(r.objectif||'')}</td></tr>`).join('')}</table>`:'<div class="m">Aucun</div>'}`;
+ body+=`<h2>Contrats en cours</h2>${cs.length?`<table><tr><th>Bénéficiaire</th><th>Offre</th><th>Fin</th><th>Séances</th><th>Payé</th></tr>${cs.map(c=>{const x=cTotals(c);return`<tr><td>${esc(bName(c.benefId))}</td><td>${esc(shortOffre(c.offre))}</td><td>${fDate(c.fin)}</td><td>${x.done}${+c.seances?' / '+esc(c.seances):''}</td><td>${eur(x.paid)} / ${eur(x.tot)}</td></tr>`}).join('')}</table>`:'<div class="m">Aucun</div>'}`;
+ body+=`<h2>Paiements en attente</h2>${late.length?`<table><tr><th>Échéance</th><th>Bénéficiaire</th><th>Offre</th><th>Montant</th></tr>${late.map(({c,e})=>`<tr><td>${fDate(e.date)}${e.date&&e.date<=t?' <span class="badge">en retard</span>':''}</td><td>${esc(bName(c.benefId))}</td><td>${esc(shortOffre(c.offre))}</td><td>${eur(e.montant)}</td></tr>`).join('')}</table>`:'<div class="m">Aucun</div>'}`;
+ return docWrap('Rapport d’activité','Situation au '+fDate(t),body);
+}
+const slug=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase();
+function exportDoc(kind,id,fmt,share){
+ let html,name;
+ if(kind==='benef'){html=docBenef(id,share);name=(share?'bilan-suivi-':'dossier-')+slug(bName(id))}
+ else if(kind==='rdv'){const r=db.rdv.find(x=>x.id===id);html=docRdv(id,share);name='compte-rendu-'+slug(bName(r.benefId))+'-'+r.date+(share?'-parents':'')}
+ else if(kind==='contrat'){const c=db.contrats.find(x=>x.id===id);html=docContrat(id);name='contrat-'+slug(bName(c.benefId))}
+ else{html=docGlobal();name='rapport-activite-yesi-'+todayStr()}
+ html=html.replace(/<title>[^<]*<\/title>/,'<title>'+name+'</title>');
+ if(fmt==='html'){dl(name+'.html',html,'text/html');toast('Fichier HTML téléchargé');return}
+ const w=window.open('','_blank');
+ if(!w){dl(name+'.html',html,'text/html');toast('Ouvre le fichier puis « Enregistrer en PDF »');return}
+ w.document.open();w.document.write(html);w.document.close();
+ setTimeout(()=>{try{w.focus();w.print()}catch(e){}},600);
+}
+function openExport(kind,id){
+ const lab=kind==='benef'?'Dossier de '+esc(bName(id)):kind==='rdv'?'Compte rendu de séance':kind==='contrat'?'Récapitulatif du contrat':'Rapport d’activité global';
+ const two=kind==='benef'||kind==='rdv';
+ const B=(fmt,share,txt,cls)=>`<button class="btn ${cls||''}" onclick="exportDoc('${kind}','${id}','${fmt}',${share?1:0})">${txt}</button>`;
+ openSheet(`<h3>Exporter</h3><div class="m">${lab}</div>
+ ${two?'<h2 style="margin-top:14px">Version complète (interne)</h2>':''}
+ <div class="btns">${B('pdf',0,'📄 PDF','gold')}${B('html',0,'🌐 HTML')}</div>
+ ${two?`<h2>Version parents / bénéficiaire</h2><div class="m">Sans « ce qui s’est dit », points clés${kind==='benef'?', contacts, contrats et notes':''} : uniquement le travail à faire et les objectifs.</div><div class="btns">${B('pdf',1,'📄 PDF','gold')}${B('html',1,'🌐 HTML')}</div>`:''}
+ <div class="m" style="margin-top:16px">PDF : dans la fenêtre d’impression, choisis « Enregistrer en PDF ». Si rien ne s’ouvre, le fichier HTML est téléchargé : ouvre-le et touche « Enregistrer en PDF ».</div>
+ <div class="btns"><button class="btn" onclick="closeSheet()">Fermer</button></div>`);
+}
+
+/* ============ PLUS / SAUVEGARDE ============ */
+function viewPlus(){
+ const le=lsGet(KEY+'_lastExport');
+ let enc=0;db.contrats.forEach(c=>(c.ech||[]).forEach(e=>{if(e.paye)enc+=+e.montant||0}));
+ return `<h2>Sauvegarde</h2><div class="card"><div class="m">Les données sont enregistrées sur ce téléphone (navigateur). Exporte une sauvegarde chaque semaine et garde-la dans ton Drive / tes mails.</div>
+ <div class="m" style="margin-top:8px">Dernière sauvegarde : <b style="color:var(--txt)">${le?fDate(le):'jamais'}</b></div>
+ <div class="btns"><button class="btn gold" onclick="exportJSON()">⬇ Exporter</button><button class="btn" onclick="$('#imp').click()">⬆ Importer</button></div>
+ <input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="importJSON(this)"></div>
+ <h2>Documents</h2><div class="card"><div class="m">Rapport d’activité : bénéficiaires actifs, RDV à venir, contrats en cours, paiements en attente.</div><div class="btns"><button class="btn" onclick="openExport('global','')">⬇ Rapport d’activité (PDF / HTML)</button></div></div>
+ <h2>Agenda</h2><div class="card"><div class="m">Envoie tous les RDV à venir dans l’agenda du téléphone (fichier .ics, rappel 1 h avant).</div><div class="btns"><button class="btn" onclick="icsAll()">📅 Exporter les RDV à venir</button></div></div>
+ <h2>Statistiques</h2><div class="stats">
+ <div class="stat"><b>${db.benef.length}</b><span>Bénéficiaires (total)</span></div>
+ <div class="stat"><b>${db.rdv.filter(r=>r.statut==='fait').length}</b><span>Séances réalisées</span></div>
+ <div class="stat"><b>${db.contrats.length}</b><span>Contrats (total)</span></div>
+ <div class="stat"><b>${eur(enc)}</b><span>Total encaissé</span></div></div>
+ <h2>Zone sensible</h2><div class="card"><button class="btn bad" style="width:100%" onclick="resetAll()">Tout effacer</button></div>
+ <div class="m" style="text-align:center;margin-top:20px">Y.E.S.I CONCEPT — Suivi Pro v1</div>`;
+}
+function exportJSON(){dl('yesi-suivi-'+todayStr()+'.json',JSON.stringify({app:'yesi-suivi-pro',version:1,date:new Date().toISOString(),...db},null,1),'application/json');lsSet(KEY+'_lastExport',todayStr());render();toast('Sauvegarde exportée')}
+function importJSON(inp){
+ const f=inp.files[0];if(!f)return;const rd=new FileReader();
+ rd.onload=()=>{try{const d=JSON.parse(rd.result);if(!Array.isArray(d.benef))throw 0;
+  if(!confirm(`Importer ${d.benef.length} bénéficiaires, ${(d.rdv||[]).length} RDV, ${(d.contrats||[]).length} contrats ?\nLes données actuelles seront remplacées.`))return;
+  db={benef:d.benef,rdv:d.rdv||[],contrats:d.contrats||[]};save();go('home');toast('Import réussi');
+ }catch(e){toast('Fichier invalide')}finally{inp.value=''}};
+ rd.readAsText(f);
+}
+function resetAll(){if(!confirm('Effacer TOUTES les données ?'))return;if(!confirm('Vraiment ? Exporte une sauvegarde avant si besoin.'))return;db={benef:[],contrats:[],rdv:[]};save();go('home');toast('Données effacées')}
+
+$('#hdate').textContent=fDate(todayStr());
+render();
+</script>
+</body>
+</html>
