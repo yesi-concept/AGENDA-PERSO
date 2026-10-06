@@ -82,7 +82,7 @@ a{color:var(--gold2);text-decoration:none}
 </style>
 </head>
 <body>
-<header><div class="brand"><div><h1>Y.E.S.I — Suivi Pro</h1><small>Bénéficiaires · RDV · Contrats</small></div><small id="hdate"></small></div></header>
+<header><div class="brand"><div><h1>Y.E.S.I — Suivi Pro</h1><small>Bénéficiaires · RDV · Contrats · v3</small></div><small id="hdate"></small></div></header>
 <main id="main"></main>
 <button class="fab" id="fab" onclick="fab()">+</button>
 <nav>
@@ -95,6 +95,7 @@ a{color:var(--gold2);text-decoration:none}
 <div class="sheet-bg" id="sbg" onclick="closeSheet()"></div>
 <div class="sheet" id="sheet"></div>
 <div class="toast" id="toast"></div>
+<input type="file" id="docin" multiple accept=".html,.htm,.pdf,image/*" style="display:none">
 
 <script>
 const KEY='yesi_suivi_pro_v1';
@@ -102,6 +103,7 @@ const BSTAT={actif:['Actif','b-ok'],prospect:['Prospect','b-blue'],pause:['En pa
 const RSTAT={prevu:['Prévu','b-gold'],fait:['Fait','b-ok'],absent:['Absent','b-bad'],annule:['Annulé','']};
 const CSTAT={encours:['En cours','b-ok'],attente:['En attente','b-warn'],termine:['Terminé',''],resilie:['Résilié','b-bad']};
 const AXES=[{k:'y',l:'Yes Attitude'},{k:'e',l:'Estime de soi'},{k:'s',l:'Smart Goals'},{k:'i',l:'Investissement'}];
+const PROTO3=[{k:'dips',l:'D.I.P.S'},{k:'sota',l:'S.O.T.A'},{k:'qfac',l:'Q.F.A.C'}];
 const TYPES=['Bilan Y.E.S.I','Séance de suivi','Séance protocole','Restitution bilan','Point parents','Appel téléphonique','Observation match','Autre'];
 const LIEUX=['Présentiel','Visio','Téléphone','Terrain / match','Autre'];
 const PROTOS=[['','—'],'D.I.P.S','S.O.T.A','Q.F.A.C','Smart Goals','Diagnostic 4 axes','Diagnostic Performer','Fiche identitaire'];
@@ -146,7 +148,7 @@ function cTotals(c){const ech=c.ech||[];const sum=ech.reduce((s,e)=>s+(+e.montan
 function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',2200)}
 function openSheet(h){const s=$('#sheet');s.innerHTML='<div class="grab"></div>'+h;s.classList.add('open');$('#sbg').classList.add('open');s.scrollTop=0;document.body.style.overflow='hidden'}
 function closeSheet(){$('#sheet').classList.remove('open');$('#sbg').classList.remove('open');document.body.style.overflow=''}
-function dl(name,content,type){const b=new Blob([content],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)}
+function dl(name,content,type){const b=content instanceof Blob?content:new Blob([content],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)}
 
 /* champs de formulaire */
 const F=(id,lab,v='',type='text',extra='')=>`<label>${lab}</label><input id="f_${id}" type="${type}" value="${esc(v)}" ${extra}>`;
@@ -176,7 +178,8 @@ function fab(){
  openSheet(`<h3>Ajouter</h3><div class="btns" style="flex-direction:column">
  <button class="btn gold" onclick="formRdv()">📅 Nouveau RDV</button>
  <button class="btn" onclick="formBenef()">👤 Nouveau bénéficiaire</button>
- <button class="btn" onclick="formContrat()">📄 Nouveau contrat</button></div>`);
+ <button class="btn" onclick="formContrat()">📄 Nouveau contrat</button>
+ <button class="btn" onclick="closeSheet();pickDocs(null)">📎 Importer des fiches bénéficiaires</button></div>`);
 }
 
 /* ============ ACCUEIL ============ */
@@ -200,7 +203,7 @@ function alerts(){
 }
 function viewHome(){
  const t=todayStr(),in7=addDays(t,7);
- if(!db.benef.length)return `<div class="card hello"><div class="t" style="color:var(--gold2)">Bienvenue dans ton suivi Y.E.S.I</div><div class="m" style="margin-top:6px">1. Ajoute un bénéficiaire<br>2. Crée son contrat (offre, échéancier)<br>3. Programme ses RDV et note le compte rendu après chaque séance</div><div class="btns"><button class="btn gold" onclick="formBenef()">+ Premier bénéficiaire</button><button class="btn" onclick="go('plus')">Importer une sauvegarde</button></div></div>`;
+ if(!db.benef.length)return `<div class="card hello"><div class="t" style="color:var(--gold2)">Bienvenue dans ton suivi Y.E.S.I</div><div class="m" style="margin-top:6px">1. Ajoute un bénéficiaire<br>2. Crée son contrat (offre, échéancier)<br>3. Programme ses RDV et note le compte rendu après chaque séance</div><div class="btns"><button class="btn gold" onclick="formBenef()">+ Premier bénéficiaire</button><button class="btn" onclick="pickDocs(null)">📎 Importer des fiches</button><button class="btn" onclick="go('plus')">Importer une sauvegarde</button></div></div>`;
  const actifs=db.benef.filter(b=>b.statut==='actif').length;
  const ctr=db.contrats.filter(c=>c.statut==='encours').length;
  const sem=db.rdv.filter(r=>r.statut==='prevu'&&r.date>=t&&r.date<=in7).length;
@@ -234,7 +237,7 @@ function renderBList(){
 function benefCard(b){
  const n=nextRdv(b.id),c=activeContrat(b.id),[l,cl]=BSTAT[b.statut]||BSTAT.actif;
  return `<div class="card tap" onclick="go('benef','${b.id}')"><div class="row"><div><div class="t">${esc(fullName(b))}</div><div class="m">${esc([b.categorie,b.poste,b.club].filter(Boolean).join(' · ')||b.domaine||'')}</div></div><span class="badge ${cl}">${l}</span></div>
- <div class="m" style="margin-top:6px">📅 ${n?fRdv(n):(b.statut==='actif'?'<span style="color:var(--warn)">Pas de prochain RDV</span>':'—')}${c?' · 📄 '+esc(shortOffre(c.offre)):''}</div></div>`;
+ <div class="m" style="margin-top:6px">📅 ${n?fRdv(n):(b.statut==='actif'?'<span style="color:var(--warn)">Pas de prochain RDV</span>':'—')}${c?' · 📄 '+esc(shortOffre(c.offre)):''}${DOCS.some(x=>x.benefId===b.id)?' · 📎 '+DOCS.filter(x=>x.benefId===b.id).length:''}</div></div>`;
 }
 function viewBenefDetail(id){
  const b=db.benef.find(x=>x.id===id);if(!b){state.benef=null;return viewBenefs()}
@@ -252,7 +255,7 @@ function viewBenefDetail(id){
  <div class="btns"><button class="btn gold sm" onclick="formRdv(null,{benefId:'${id}'})">+ RDV</button><button class="btn sm" onclick="formContrat(null,'${id}')">+ Contrat</button><button class="btn sm" onclick="formBenef('${id}')">✎ Fiche</button><button class="btn sm" onclick="openExport('benef','${id}')">⬇ Export</button></div></div>
  ${last&&(last.objNext||last.devoirs)?`<div class="card alert"><div class="t">🎯 Pour le prochain RDV</div><div class="m">Suite à la séance du ${fDate(last.date)}</div>${noteB('OBJECTIF',last.objNext)}${noteB('TRAVAIL DONNÉ',last.devoirs)}</div>`:''}
  ${b.objectifs?`<h2>Demande de départ</h2><div class="card"><div class="note" style="margin:0">${esc(b.objectifs)}</div></div>`:''}
- ${hasAx?`<h2>Diagnostic Y.E.S.I</h2><div class="axes">${AXES.map(a=>`<div><b>${b[a.k]!==''&&b[a.k]!=null?esc(b[a.k]):'–'}</b><span>${a.l}</span></div>`).join('')}</div>`:''}
+ ${diagBlock(b)}${docsBlock(id)}
  <h2>Prochains RDV</h2>${fut.length?fut.map(r=>rdvCard(r,false)).join(''):'<div class="empty">Aucun RDV programmé</div>'}
  <h2>Contrats</h2>${cs.length?cs.map(c=>contratCard(c,false)).join(''):'<div class="empty">Aucun contrat</div>'}
  <h2>Historique & comptes rendus (${hist.length})</h2>${hist.length?`<div class="tl">${hist.map(histCard).join('')}</div>`:'<div class="empty">Aucune séance passée</div>'}
@@ -277,13 +280,14 @@ function formBenef(id){
  ${F('source','Origine (comment il est arrivé)',b.source)}
  ${T('objectifs','Demande de départ / objectifs',b.objectifs)}
  <label>Diagnostic Y.E.S.I (/10)</label><div class="axes">${AXES.map(a=>`<div><input id="f_${a.k}" type="number" inputmode="decimal" min="0" max="10" step="0.5" value="${esc(b[a.k]??'')}" style="text-align:center;padding:8px 2px"><span>${a.l}</span></div>`).join('')}</div>
+ <label>Protocoles fondations (/10)</label><div class="axes" style="grid-template-columns:repeat(3,1fr)">${PROTO3.map(a=>`<div><input id="f_${a.k}" type="number" inputmode="decimal" min="0" max="10" step="0.5" value="${esc(b[a.k]??'')}" style="text-align:center;padding:8px 2px"><span>${a.l}</span></div>`).join('')}</div>
  ${T('notes','Notes générales',b.notes)}
  <div class="btns"><button class="btn" onclick="closeSheet()">Annuler</button><button class="btn gold" onclick="saveBenef('${id||''}')">Enregistrer</button></div>`);
 }
 function saveBenef(id){
  if(!V('prenom'))return toast('Prénom obligatoire');
  const b=id?db.benef.find(x=>x.id===id):{id:uid(),cree:todayStr()};
- ['prenom','nom','statut','domaine','categorie','poste','club','tel','email','parent','parentTel','parentEmail','source','objectifs','notes','y','e','s','i'].forEach(k=>b[k]=V(k));
+ ['prenom','nom','statut','domaine','categorie','poste','club','tel','email','parent','parentTel','parentEmail','source','objectifs','notes','y','e','s','i','dips','sota','qfac'].forEach(k=>b[k]=V(k));
  if(!id)db.benef.push(b);
  save();closeSheet();toast('Fiche enregistrée');go('benef',b.id);
 }
@@ -291,6 +295,7 @@ function delBenef(id){
  const n=db.rdv.filter(r=>r.benefId===id).length,c=db.contrats.filter(x=>x.benefId===id).length;
  if(!confirm(`Supprimer ${bName(id)} ainsi que ses ${n} RDV et ${c} contrat(s) ? Action définitive.`))return;
  db.benef=db.benef.filter(b=>b.id!==id);db.rdv=db.rdv.filter(r=>r.benefId!==id);db.contrats=db.contrats.filter(x=>x.benefId!==id);
+ DOCS.filter(x=>x.benefId===id).forEach(x=>docDel(x.id).catch(()=>{}));DOCS=DOCS.filter(x=>x.benefId!==id);
  save();toast('Supprimé');go('benef');
 }
 
@@ -469,6 +474,116 @@ const icsWrap=evs=>['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//YESI CONCEPT//Sui
 function icsOne(id){const r=db.rdv.find(x=>x.id===id);if(!r)return;dl('rdv-'+bName(r.benefId).replace(/\s+/g,'-')+'-'+r.date+'.ics',icsWrap([icsEvent(r)]),'text/calendar')}
 function icsAll(){const l=db.rdv.filter(r=>r.statut==='prevu'&&r.date>=todayStr());if(!l.length)return toast('Aucun RDV à venir');dl('rdv-yesi-a-venir.ics',icsWrap(l.map(icsEvent)),'text/calendar');toast(l.length+' RDV exportés')}
 
+/* ============ DOCUMENTS & FICHES BÉNÉFICIAIRES (IndexedDB) ============ */
+let DOCS=[],_idb=null;
+function idb(){if(_idb)return _idb;_idb=new Promise((res,rej)=>{if(!window.indexedDB)return rej('no idb');const r=indexedDB.open('yesi_suivi_docs',1);r.onupgradeneeded=()=>r.result.createObjectStore('docs',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});return _idb}
+function idbDo(mode,fn){return idb().then(d=>new Promise((res,rej)=>{const tx=d.transaction('docs',mode),q=fn(tx.objectStore('docs'));let out;if(q)q.onsuccess=()=>{out=q.result};tx.oncomplete=()=>res(out);tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error)}))}
+const docPut=d=>idbDo('readwrite',st=>st.put(d));
+const docGet=id=>idbDo('readonly',st=>st.get(id));
+const docDel=id=>idbDo('readwrite',st=>st.delete(id));
+const docAll=()=>idbDo('readonly',st=>st.getAll());
+const docClear=()=>idbDo('readwrite',st=>st.clear());
+function loadDocs(){return docAll().then(l=>{DOCS=(l||[]).map(({data,...m})=>m);render()}).catch(()=>{})}
+const fSize=n=>n>1e6?(n/1e6).toFixed(1)+' Mo':Math.max(1,Math.round((n||0)/1e3))+' Ko';
+const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const titleCase=s=>String(s).toLowerCase().replace(/(^|[\s-])(\p{L})/gu,(m,a,c)=>a+c.toUpperCase());
+function findBenef(name){const n=norm(name);if(!n)return null;const srt=x=>x.split(' ').sort().join(' ');return db.benef.find(b=>{const f=norm(fullName(b));return f&&(f===n||srt(f)===srt(n))})||null}
+const MOIS={janvier:1,fevrier:2,mars:3,avril:4,mai:5,juin:6,juillet:7,aout:8,septembre:9,octobre:10,novembre:11,decembre:12};
+function frDate(s){const m=norm(s).match(/(\d{1,2})(?:er)? ([a-z]+) (\d{4})/);return m&&MOIS[m[2]]?m[3]+'-'+pad(MOIS[m[2]])+'-'+pad(m[1]):''}
+function parseFiche(html){
+ const d=new DOMParser().parseFromString(html,'text/html'),tx=e=>e?e.textContent.replace(/\s+/g,' ').trim():'';
+ const title=tx(d.querySelector('title'));
+ let name=tx(d.querySelector('.athlete-name'));
+ if(!name){const m=title.match(/[-–—]\s*([^-–—]+)$/);if(m)name=m[1].trim()}
+ let date='',profil='';
+ d.querySelectorAll('.athlete-info > div').forEach(x=>{if(x.classList.contains('athlete-name'))return;const t=tx(x);if(/date/i.test(t))date=frDate(t);else if(t&&!profil)profil=t});
+ const body=tx(d.body);
+ if(!date){const m=body.match(/date de l.audit\s*:\s*(.{0,30})/i);if(m)date=frDate(m[1])}
+ const sc={};
+ d.querySelectorAll('.score-item').forEach(it=>{
+  const h=tx(it.querySelector('h4')).toUpperCase(),v=tx(it.querySelector('.score-value'));
+  const p=v.match(/([\d.,]+)\s*%/),q=v.match(/([\d.,]+)\s*\/\s*10/);
+  const n=p?Math.round(parseFloat(p[1].replace(',','.')))/10:q?parseFloat(q[1].replace(',','.')):NaN;if(isNaN(n))return;
+  const k=h.includes('YES ATTITUDE')?'y':h.includes('ESTIME')?'e':h.includes('SMART')?'s':h.includes('INVESTISSEMENT')?'i':h.includes('D.I.P.S')?'dips':h.includes('S.O.T.A')?'sota':h.includes('Q.F.A.C')?'qfac':null;
+  if(k&&sc[k]==null)sc[k]=n});
+ const g=tx(d.querySelector('.alert-box h2')).match(/([\d.,]+)\s*\/\s*10/);if(g)sc.global=parseFloat(g[1].replace(',','.'));
+ const b=body.match(/bilan Y\.E\.S\.I[^()%]{0,60}\((\d{1,3})\s*%/i);if(b)sc.bilan=+b[1];
+ return{name,date,profil,scores:sc,title};
+}
+function applyFiche(b,p){
+ const s=p.scores;if(!Object.keys(s).length)return false;
+ if(b.auditDate&&p.date&&p.date<b.auditDate)return false;
+ ['y','e','s','i','dips','sota','qfac'].forEach(k=>{if(s[k]!=null)b[k]=String(s[k])});
+ if(s.global!=null)b.scoreProto=String(s.global);if(s.bilan!=null)b.scoreBilan=String(s.bilan);
+ if(p.date)b.auditDate=p.date;return true;
+}
+const kindOf=f=>/\.html?$/i.test(f.name)||f.type==='text/html'?'html':(f.type==='application/pdf'||/\.pdf$/i.test(f.name))?'pdf':(f.type||'').startsWith('image/')?'image':'autre';
+function readFile(f,kind){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);kind==='html'?r.readAsText(f):r.readAsDataURL(f)})}
+function pickDocs(benefId){const i=$('#docin');i.value='';i.onchange=()=>{const l=[...i.files];if(l.length)importFiles(l,benefId)};i.click()}
+async function importFiles(files,benefId){
+ toast('Import en cours…');
+ const rep=[];let changed=false;
+ for(const f of files){
+  try{
+   if(f.size>15e6){rep.push('✕ '+esc(f.name)+' : trop lourd (15 Mo max)');continue}
+   const kind=kindOf(f),data=await readFile(f,kind);
+   const p=kind==='html'?parseFiche(data):null;
+   let b=benefId?db.benef.find(x=>x.id===benefId):null,created=false;
+   if(!b){
+    const nm=p&&p.name?p.name:f.name.replace(/\.[^.]+$/,'').replace(/[_\-.]+/g,' ').replace(/\b(fiche|bilan|analyse|audit|rapport|yesi|y e s i|concept)\b/gi,' ');
+    b=findBenef(nm);
+    if(!b&&p&&p.name){const w=titleCase(p.name).split(' ');b={id:uid(),cree:todayStr(),prenom:w[0],nom:w.slice(1).join(' '),statut:'actif',domaine:/sport/i.test(p.profil)?'Football':'Autre',source:'Import fiche'};db.benef.push(b);created=true;changed=true}
+   }
+   if(!b){rep.push('✕ '+esc(f.name)+' : bénéficiaire non reconnu → ajoute-le depuis sa fiche');continue}
+   const ex=DOCS.find(x=>x.benefId===b.id&&x.fichier===f.name);
+   const doc={id:ex?ex.id:uid(),benefId:b.id,nom:(p&&p.title)||f.name.replace(/\.[^.]+$/,''),fichier:f.name,kind,mime:f.type||(kind==='html'?'text/html':kind==='pdf'?'application/pdf':''),date:todayStr(),size:f.size,meta:p?{date:p.date,scores:p.scores}:null,data};
+   await docPut(doc);
+   const{data:_d,...m}=doc;DOCS=DOCS.filter(x=>x.id!==doc.id);DOCS.push(m);
+   const ap=p?applyFiche(b,p):false;if(ap)changed=true;
+   rep.push('✔ '+esc(f.name)+' → <b style="color:var(--txt)">'+esc(fullName(b))+'</b>'+(created?' · nouveau bénéficiaire':'')+(ap?' · scores mis à jour':'')+(ex?' · remplacé':''));
+  }catch(e){rep.push('✕ '+esc(f.name)+' : erreur (lecture ou stockage)')}
+ }
+ if(changed)save();render();
+ openSheet(`<h3>Import terminé</h3>${rep.map(r=>`<div class="m" style="padding:7px 0;border-bottom:1px solid var(--line)">${r}</div>`).join('')}<div class="btns"><button class="btn gold" onclick="closeSheet()">OK</button></div>`);
+}
+async function docFull(id){const d=await docGet(id);if(!d)throw 0;return d}
+async function docBlob(d){return d.kind==='html'?new Blob([d.data],{type:'text/html'}):(await fetch(d.data)).blob()}
+async function openDoc(id){
+ const w=window.open('','_blank');
+ try{const u=URL.createObjectURL(await docBlob(await docFull(id)));if(w)w.location.href=u;else location.href=u}
+ catch(e){if(w)w.close();toast('Document introuvable')}
+}
+async function downloadDoc(id){try{const d=await docFull(id);dl(d.fichier||slug(d.nom)+'.html',await docBlob(d));toast('Téléchargé')}catch(e){toast('Document introuvable')}}
+const PRINT_CSS='<style>@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;padding:0!important;min-height:0!important}.quick-nav{display:none!important}.container{box-shadow:none!important;border-radius:0!important;max-width:none!important}.score-item,.step-card,.pillar-analysis,.current-state,.future-risk,.explanation-section{break-inside:avoid}}</style>';
+async function pdfDoc(id){
+ const w=window.open('','_blank');
+ try{
+  const d=await docFull(id);
+  let h=d.kind==='html'?d.data:`<!doctype html><html><head><meta charset="utf-8"><title>${esc(d.nom)}</title></head><body style="margin:0"><img src="${d.data}" style="width:100%"></body></html>`;
+  h=h.includes('</head>')?h.replace('</head>',PRINT_CSS+'</head>'):PRINT_CSS+h;
+  if(!w){dl(d.fichier||slug(d.nom)+'.html',h,'text/html');return toast('Ouvre le fichier puis Imprimer → PDF')}
+  w.document.open();w.document.write(h);w.document.close();
+  setTimeout(()=>{try{w.focus();w.print()}catch(e){}},900);
+ }catch(e){if(w)w.close();toast('Document introuvable')}
+}
+async function delDoc(id){if(!confirm('Supprimer ce document ?'))return;try{await docDel(id)}catch(e){}DOCS=DOCS.filter(x=>x.id!==id);render();toast('Document supprimé')}
+function docsBlock(id){
+ const ds=DOCS.filter(x=>x.benefId===id).sort((a,b)=>((b.meta&&b.meta.date)||b.date||'').localeCompare((a.meta&&a.meta.date)||a.date||''));
+ return `<h2>Documents & fiches (${ds.length})</h2>${ds.length?ds.map(x=>{
+  const ic=x.kind==='html'?'🌐':x.kind==='pdf'?'📄':x.kind==='image'?'🖼':'📎',s=(x.meta&&x.meta.scores)||{};
+  return `<div class="card"><div class="t" style="overflow-wrap:anywhere">${ic} ${esc(x.nom)}</div>
+  <div class="m">${x.meta&&x.meta.date?'Audit du '+fDate(x.meta.date)+' · ':''}ajouté le ${fDate(x.date)} · ${fSize(x.size)}</div>
+  ${s.bilan!=null||s.global!=null?`<div class="m">${[s.bilan!=null&&'Bilan Y.E.S.I '+s.bilan+' %',s.global!=null&&'Protocoles '+s.global+'/10'].filter(Boolean).join(' · ')}</div>`:''}
+  <div class="btns" style="margin-top:10px"><button class="btn sm" onclick="openDoc('${x.id}')">👁 Ouvrir</button><button class="btn sm" onclick="downloadDoc('${x.id}')">⬇ Télécharger</button>${x.kind!=='pdf'?`<button class="btn sm" onclick="pdfDoc('${x.id}')">📄 PDF</button>`:''}<button class="btn sm bad" onclick="delDoc('${x.id}')">✕</button></div></div>`}).join(''):'<div class="empty">Aucun document</div>'}
+ <button class="btn sm" style="width:100%" onclick="pickDocs('${id}')">📎 Ajouter une fiche / un document</button>`;
+}
+function diagBlock(b){
+ const has=l=>l.some(a=>b[a.k]!==''&&b[a.k]!=null),box=l=>l.map(a=>`<div><b>${b[a.k]!==''&&b[a.k]!=null?esc(b[a.k]):'–'}</b><span>${a.l}</span></div>`).join('');
+ if(!has(AXES)&&!has(PROTO3)&&!b.scoreBilan)return'';
+ const info=[b.scoreBilan&&'Bilan Y.E.S.I '+b.scoreBilan+' %',b.scoreProto&&'Protocoles '+b.scoreProto+'/10',b.auditDate&&'audit du '+fDate(b.auditDate)].filter(Boolean).join(' · ');
+ return `<h2>Diagnostic Y.E.S.I</h2>${has(AXES)?`<div class="axes">${box(AXES)}</div>`:''}${has(PROTO3)?`<div class="axes" style="grid-template-columns:repeat(3,1fr);margin-top:6px">${box(PROTO3)}</div>`:''}${info?`<div class="m" style="margin-top:8px">${esc(info)}</div>`:''}`;
+}
+
 /* ============ EXPORT DOCUMENTS PDF / HTML ============ */
 function docWrap(title,sub,body){
  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>
@@ -526,6 +641,8 @@ function docBenef(id,share){
   ...(share?[]:[['Téléphone',esc(b.tel)],['Email',esc(b.email)],['Parent / référent',esc([b.parent,b.parentTel,b.parentEmail].filter(Boolean).join(' · '))],['Origine',esc(b.source)]]),['Suivi depuis',b.cree?fDate(b.cree):'']])}`;
  if(b.objectifs)body+=`<h2>Demande de départ</h2><div class="box"><div class="n" style="margin:0">${esc(b.objectifs)}</div></div>`;
  if(hasAx)body+=`<h2>Diagnostic Y.E.S.I (/10)</h2><div class="axes">${AXES.map(a=>`<div><b>${b[a.k]!==''&&b[a.k]!=null?esc(b[a.k]):'–'}</b><span>${a.l}</span></div>`).join('')}</div>`;
+ if(PROTO3.some(a=>b[a.k]!==''&&b[a.k]!=null))body+=`<h2>Protocoles fondations (/10)</h2><div class="axes">${PROTO3.map(a=>`<div><b>${b[a.k]!==''&&b[a.k]!=null?esc(b[a.k]):'–'}</b><span>${a.l}</span></div>`).join('')}</div>`;
+ if(b.scoreBilan||b.scoreProto)body+=`<div class="m" style="margin-top:8px">${esc([b.scoreBilan&&'Bilan Y.E.S.I '+b.scoreBilan+' %',b.scoreProto&&'Score protocoles '+b.scoreProto+'/10',b.auditDate&&'audit du '+fDate(b.auditDate)].filter(Boolean).join(' · '))}</div>`;
  body+=`<h2>Synthèse du suivi</h2>${kv([['Séances réalisées',String(done.length)],['Absences',String(rs.filter(r=>r.statut==='absent').length)],...(share?[]:[['Ressenti moyen',res.length?(res.reduce((a,c)=>a+c,0)/res.length).toFixed(1)+' / 10':'']]),['Prochain RDV',fut[0]?fRdv(fut[0]):'—']])}`;
  if(!share&&cs.length)body+=`<h2>Contrats</h2>${cs.map(ctrBox).join('')}`;
  body+=`<h2>${share?'Séances':'Historique & comptes rendus'}</h2>${hist.length?hist.map(r=>crBox(r,false,share)).join(''):'<div class="m">Aucune séance</div>'}`;
@@ -593,6 +710,7 @@ function viewPlus(){
  <div class="m" style="margin-top:8px">Dernière sauvegarde : <b style="color:var(--txt)">${le?fDate(le):'jamais'}</b></div>
  <div class="btns"><button class="btn gold" onclick="exportJSON()">⬇ Exporter</button><button class="btn" onclick="$('#imp').click()">⬆ Importer</button></div>
  <input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="importJSON(this)"></div>
+ <h2>Fiches bénéficiaires</h2><div class="card"><div class="m">Importe tes analyses / bilans HTML (plusieurs à la fois) : le bénéficiaire est retrouvé par son nom — ou créé — et ses scores Y.E.S.I et protocoles sont repris. Fichiers stockés sur ce téléphone : ${DOCS.length}.</div><div class="btns"><button class="btn gold" onclick="pickDocs(null)">📎 Importer des fiches</button></div></div>
  <h2>Documents</h2><div class="card"><div class="m">Rapport d’activité : bénéficiaires actifs, RDV à venir, contrats en cours, paiements en attente.</div><div class="btns"><button class="btn" onclick="openExport('global','')">⬇ Rapport d’activité (PDF / HTML)</button></div></div>
  <h2>Agenda</h2><div class="card"><div class="m">Envoie tous les RDV à venir dans l’agenda du téléphone (fichier .ics, rappel 1 h avant).</div><div class="btns"><button class="btn" onclick="icsAll()">📅 Exporter les RDV à venir</button></div></div>
  <h2>Statistiques</h2><div class="stats">
@@ -601,21 +719,25 @@ function viewPlus(){
  <div class="stat"><b>${db.contrats.length}</b><span>Contrats (total)</span></div>
  <div class="stat"><b>${eur(enc)}</b><span>Total encaissé</span></div></div>
  <h2>Zone sensible</h2><div class="card"><button class="btn bad" style="width:100%" onclick="resetAll()">Tout effacer</button></div>
- <div class="m" style="text-align:center;margin-top:20px">Y.E.S.I CONCEPT — Suivi Pro v1</div>`;
+ <div class="m" style="text-align:center;margin-top:20px">Y.E.S.I CONCEPT — Suivi Pro v3 (fiches + export PDF)</div>`;
 }
-function exportJSON(){dl('yesi-suivi-'+todayStr()+'.json',JSON.stringify({app:'yesi-suivi-pro',version:1,date:new Date().toISOString(),...db},null,1),'application/json');lsSet(KEY+'_lastExport',todayStr());render();toast('Sauvegarde exportée')}
+async function exportJSON(){let docs=[];try{docs=await docAll()||[]}catch(e){}
+ dl('yesi-suivi-'+todayStr()+'.json',JSON.stringify({app:'yesi-suivi-pro',version:2,date:new Date().toISOString(),...db,docs}),'application/json');lsSet(KEY+'_lastExport',todayStr());render();toast('Sauvegarde exportée')}
 function importJSON(inp){
  const f=inp.files[0];if(!f)return;const rd=new FileReader();
- rd.onload=()=>{try{const d=JSON.parse(rd.result);if(!Array.isArray(d.benef))throw 0;
-  if(!confirm(`Importer ${d.benef.length} bénéficiaires, ${(d.rdv||[]).length} RDV, ${(d.contrats||[]).length} contrats ?\nLes données actuelles seront remplacées.`))return;
-  db={benef:d.benef,rdv:d.rdv||[],contrats:d.contrats||[]};save();go('home');toast('Import réussi');
+ rd.onload=async()=>{try{const d=JSON.parse(rd.result);if(!Array.isArray(d.benef))throw 0;
+  if(!confirm(`Importer ${d.benef.length} bénéficiaires, ${(d.rdv||[]).length} RDV, ${(d.contrats||[]).length} contrats, ${(d.docs||[]).length} documents ?\nLes données actuelles seront remplacées.`))return;
+  db={benef:d.benef,rdv:d.rdv||[],contrats:d.contrats||[]};save();
+  if(Array.isArray(d.docs)){try{await docClear();for(const x of d.docs)await docPut(x);DOCS=d.docs.map(({data,...m})=>m)}catch(e){toast('Documents non restaurés')}}
+  go('home');toast('Import réussi');
  }catch(e){toast('Fichier invalide')}finally{inp.value=''}};
  rd.readAsText(f);
 }
-function resetAll(){if(!confirm('Effacer TOUTES les données ?'))return;if(!confirm('Vraiment ? Exporte une sauvegarde avant si besoin.'))return;db={benef:[],contrats:[],rdv:[]};save();go('home');toast('Données effacées')}
+function resetAll(){if(!confirm('Effacer TOUTES les données ?'))return;if(!confirm('Vraiment ? Exporte une sauvegarde avant si besoin.'))return;db={benef:[],contrats:[],rdv:[]};save();docClear().catch(()=>{});DOCS=[];go('home');toast('Données effacées')}
 
 $('#hdate').textContent=fDate(todayStr());
 render();
+loadDocs();
 </script>
 </body>
 </html>
