@@ -104,7 +104,7 @@ details summary{list-style:none}details summary::-webkit-details-marker{display:
 </style>
 </head>
 <body>
-<header><div class="brand"><div><h1>Y.E.S.I — Suivi Pro</h1><small>Bénéficiaires · RDV · Contrats · v5</small></div><small id="hdate"></small></div></header>
+<header><div class="brand"><div><h1>Y.E.S.I — Suivi Pro</h1><small>Bénéficiaires · RDV · Contrats · v6</small></div><small id="hdate"></small></div></header>
 <main id="main"></main>
 <button class="fab" id="fab" onclick="fab()">+</button>
 <nav>
@@ -528,6 +528,29 @@ function findBenef(name){const n=norm(name);if(!n)return null;const srt=x=>x.spl
  return c.length===1?c[0]:null}
 const MOIS={janvier:1,fevrier:2,mars:3,avril:4,mai:5,juin:6,juillet:7,aout:8,septembre:9,octobre:10,novembre:11,decembre:12};
 function frDate(s){const m=norm(s).match(/(\d{1,2})(?:er)? ([a-z]+) (\d{4})/);return m&&MOIS[m[2]]?m[3]+'-'+pad(MOIS[m[2]])+'-'+pad(m[1]):''}
+const LBL={y:/yes\s*attitude/i,e:/estime\s*de\s*soi/i,s:/smart\s*goals?/i,i:/investissement/i,dips:/d\.\s?i\.\s?p\.\s?s\.?|\bdips\b/i,sota:/s\.\s?o\.\s?t\.\s?a\.?|\bsota\b/i,qfac:/q\.\s?f\.\s?a\.\s?c\.?|\bqfac\b/i};
+function parseText(txt){
+ const t=String(txt||'').replace(/\s+/g,' '),sc={};
+ const anyLbl=new RegExp(Object.values(LBL).map(r=>r.source).join('|'),'i');
+ Object.entries(LBL).forEach(([k,re])=>{
+  const g=new RegExp('('+re.source+')([^0-9]{0,50}?)(\\d{1,3}(?:[.,]\\d+)?)\\s*(%|/\\s*10(?![0-9]))','gi');let m;
+  while((m=g.exec(t))){if(anyLbl.test(m[2]))continue;const n=parseFloat(m[3].replace(',','.')),v=m[4]==='%'?n/10:n;if(v>=0&&v<=10){sc[k]=Math.round(v*10)/10;break}}
+ });
+ let m=t.match(/score\s+global[^0-9]{0,40}?(\d{1,2}(?:[.,]\d+)?)\s*\/\s*10(?![0-9])/i);if(m)sc.global=parseFloat(m[1].replace(',','.'));
+ m=t.match(/(?:bilan\s+(?:mental\s+)?y\.?\s?e\.?\s?s\.?\s?i|bilan\s+global|score\s+global(?:\s+y\.?\s?e\.?\s?s\.?\s?i)?)[^0-9%]{0,50}?(\d{1,3}(?:[.,]\d)?)\s*%/i);if(m&&+m[1].replace(',','.')<=100)sc.bilan=parseFloat(m[1].replace(',','.'));
+ let date=frDate((t.match(/(\d{1,2}(?:er)?\s+(?:janvier|f[ée]vrier|mars|avril|mai|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[ée]cembre)\s+\d{4})/i)||[])[1]||'');
+ if(!date){const d=t.match(/\b(\d{1,2})\/(\d{1,2})\/(20\d{2})\b/);if(d)date=d[3]+'-'+pad(d[2])+'-'+pad(d[1])}
+ return{scores:sc,date};
+}
+let _pdfjs=null;
+function loadPdfjs(){if(_pdfjs)return _pdfjs;_pdfjs=new Promise((res,rej)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';sc.onload=()=>{try{pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';res(pdfjsLib)}catch(e){_pdfjs=null;rej(e)}};sc.onerror=()=>{_pdfjs=null;rej('load')};document.head.appendChild(sc)});return _pdfjs}
+async function pdfText(dataUrl){const lib=await loadPdfjs();const bin=atob(dataUrl.split(',')[1]),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);const doc=await lib.getDocument({data:u}).promise;let out='';for(let i=1;i<=Math.min(doc.numPages,30);i++){const c=await(await doc.getPage(i)).getTextContent();out+=c.items.map(x=>x.str).join(' ')+'\n'}return out}
+async function readFiche(f){
+ const{kind,data}=await readSmart(f);let p=null,pdfErr=false;
+ if(kind==='html')p=parseFiche(data);
+ else if(kind==='pdf'){try{const g=parseText(await pdfText(data));p={name:'',date:g.date,scores:g.scores,title:f.name.replace(/\.[^.]+$/,''),brand:''}}catch(e){pdfErr=true}}
+ return{kind,data,p,pdfErr};
+}
 function parseFiche(html){
  const d=new DOMParser().parseFromString(html,'text/html'),tx=e=>e?e.textContent.replace(/\s+/g,' ').trim():'';
  const title=tx(d.querySelector('title'));
@@ -548,6 +571,7 @@ function parseFiche(html){
   if(k&&sc[k]==null)sc[k]=n});
  const g=tx(d.querySelector('.alert-box h2')).match(/([\d.,]+)\s*\/\s*10/);if(g)sc.global=parseFloat(g[1].replace(',','.'));
  const b=body.match(/bilan Y\.E\.S\.I[^()%]{0,60}\((\d{1,3})\s*%/i);if(b)sc.bilan=+b[1];
+ const g2=parseText(body);Object.entries(g2.scores).forEach(([k,v])=>{if(sc[k]==null)sc[k]=v});if(!date)date=g2.date;
  return{name,date,profil,scores:sc,title,brand};
 }
 function applyFiche(b,p){
@@ -566,11 +590,12 @@ async function readSmart(f){
 function ficheCat(p){if(!p)return'';if(Object.keys(p.scores||{}).length)return'Analyse / bilan';const b=(p.brand||'').toUpperCase();return b.includes('RESSENTI')?'Ressenti instantané':'Fiche de travail'}
 let _pickRdv=null,_pending=[];
 function pickDocs(benefId,rdvId){_pickRdv=rdvId||null;const i=$('#docin');i.value='';i.onchange=()=>{const l=[...i.files];if(l.length)importFiles(l,benefId,_pickRdv)};i.click()}
-async function storeDoc(f,kind,data,p,b,rdvId){
+async function storeDoc(f,kind,data,p,b,rdvId,noApply){
  const ex=DOCS.find(x=>x.benefId===b.id&&x.fichier===f.name);
  const doc={id:ex?ex.id:uid(),benefId:b.id,rdvId:rdvId||(ex&&ex.rdvId)||null,nom:(p&&p.title)||f.name.replace(/\.[^.]+$/,''),cat:ficheCat(p)||(kind==='pdf'?'PDF':kind==='image'?'Image':'Document'),fichier:f.name,kind,mime:f.type||(kind==='html'?'text/html':kind==='pdf'?'application/pdf':''),date:todayStr(),size:f.size,meta:p?{date:p.date,scores:p.scores}:null,data};
  await docPut(doc);const{data:_d,...m}=doc;DOCS=DOCS.filter(x=>x.id!==doc.id);DOCS.push(m);
- const ap=p?applyFiche(b,p):false;
+ storeDoc.last=doc.id;
+ const ap=p&&!noApply?applyFiche(b,p):false;
  return '✔ '+esc(f.name)+' → <b style="color:var(--txt)">'+esc(fullName(b))+'</b>'+(doc.cat?' · '+esc(doc.cat):'')+(ap?' · mesure ajoutée à la progression':'')+(ex?' · remplacé':'');
 }
 async function importFiles(files,benefId,rdvId){
@@ -579,9 +604,8 @@ async function importFiles(files,benefId,rdvId){
  for(const f of files){
   try{
    if(f.size>15e6){rep.push('✕ '+esc(f.name)+' : trop lourd (15 Mo max)');continue}
-   const{kind,data}=await readSmart(f);
+   const{kind,data,p}=await readFiche(f);
    if(kind==='autre'){rep.push('✕ '+esc(f.name)+' : format non pris en charge (HTML, PDF ou image)');continue}
-   const p=kind==='html'?parseFiche(data):null;
    let b=benefId?db.benef.find(x=>x.id===benefId):null;
    if(!b){const nm=p&&p.name?p.name:f.name.replace(/\.[^.]+$/,'').replace(/[_\-.]+/g,' ').replace(/\b(fiche|resume|résumé|bilan|analyse|audit|rapport|seance|séance|yesi|y e s i|concept)\b/gi,' ');b=findBenef(nm)}
    if(!b){_pending.push({f,kind,data,p});continue}
@@ -719,7 +743,9 @@ function diagBlock(b){
 function formMesure(bid,mid){
  const b=db.benef.find(x=>x.id===bid),h=mid?ensureHist(b).find(x=>x.id===mid):{date:todayStr(),src:'Re-bilan'};
  const inp=a=>`<div><input id="f_m_${a.k}" type="number" inputmode="decimal" min="0" max="10" step="0.1" value="${h[a.k]??''}" style="text-align:center;padding:8px 2px"><span>${a.l}</span></div>`;
- openSheet(`<h3>${mid?'Modifier la mesure':'Nouvelle mesure'}</h3><div class="m">${esc(fullName(b))} — laisse vide ce qui n’a pas été mesuré.</div>
+ window._mesDoc=null;
+ openSheet(`<h3>${mid?'Modifier la mesure':'Nouvelle mesure'}</h3><div class="m">${esc(fullName(b))}</div>
+ ${mid?(h.docId&&DOCS.some(x=>x.id===h.docId)?`<button class="btn sm" style="width:100%;margin-top:10px" onclick="openDoc('${h.docId}')">👁 Ouvrir la fiche source</button>`:''):`<button class="btn gold" style="width:100%;margin-top:12px" onclick="pickMesure('${bid}')">📥 Importer le bilan (HTML / PDF)</button><div id="mimp" style="margin-top:8px"></div><div class="m" style="text-align:center;margin-top:6px">— ou saisis à la main, laisse vide ce qui n’a pas été mesuré —</div>`}
  <div class="g2"><div>${F('mdate','Date',h.date,'date')}</div><div>${S('msrc','Type',['Bilan','Re-bilan','Point d’étape','Fiche importée','Initial','Saisie'],h.src)}</div></div>
  <label>Axes Y.E.S.I (/10)</label><div class="axes">${AXES.map(inp).join('')}</div>
  <label>Protocoles (/10)</label><div class="axes" style="grid-template-columns:repeat(3,1fr)">${PROTO3.map(inp).join('')}</div>
@@ -732,8 +758,28 @@ function saveMesure(bid,mid){
  SKEYS.forEach(k=>{const v=num('m_'+k);m[k]=v==null?null:Math.min(10,Math.max(0,v));if(v!=null)any=true});
  m.bilan=num('mbilan');m.proto=num('mproto');if(m.bilan!=null||m.proto!=null)any=true;
  if(!any)return toast('Saisis au moins un score');
- ensureHist(b);if(mid)Object.assign(b.hist.find(x=>x.id===mid),m);else b.hist.push(Object.assign({id:uid()},m));
- syncCurrent(b);save();closeSheet();render();toast('Mesure enregistrée');
+ ensureHist(b);let tgt;if(mid){tgt=b.hist.find(x=>x.id===mid);Object.assign(tgt,m)}else{tgt=Object.assign({id:uid()},m);b.hist.push(tgt)}
+ syncCurrent(b);save();closeSheet();render();
+ const d=window._mesDoc;window._mesDoc=null;
+ if(!d)return toast('Mesure enregistrée');
+ storeDoc(d.f,d.kind,d.data,d.p,b,null,true).then(()=>{tgt.docId=storeDoc.last;save();render();toast('Mesure enregistrée + fiche jointe 📎')}).catch(()=>toast('Mesure enregistrée (fiche non jointe)'));
+}
+function pickMesure(bid){const i=$('#docin');i.value='';i.onchange=()=>{const f=i.files[0];if(f)mesureFromFile(bid,f)};i.click()}
+async function mesureFromFile(bid,f){
+ const box=$('#mimp');box.innerHTML='<div class="m">Lecture du fichier…</div>';
+ try{
+  if(f.size>15e6)return box.innerHTML='<div class="m" style="color:var(--bad)">Fichier trop lourd (15 Mo max)</div>';
+  const{kind,data,p,pdfErr}=await readFiche(f);
+  if(kind==='autre')return box.innerHTML='<div class="m" style="color:var(--bad)">Format non pris en charge : HTML, PDF ou image</div>';
+  window._mesDoc={f,kind,data,p};
+  const sc=(p&&p.scores)||{},n=Object.keys(sc).length;
+  SKEYS.forEach(k=>{if(sc[k]!=null)$('#f_m_'+k).value=sc[k]});
+  if(sc.bilan!=null)$('#f_mbilan').value=sc.bilan;if(sc.global!=null)$('#f_mproto').value=sc.global;if(p&&p.date)$('#f_mdate').value=p.date;
+  if(n)$('#f_msrc').value=ensureHist(db.benef.find(x=>x.id===bid)).length?'Re-bilan':'Bilan';
+  const b=db.benef.find(x=>x.id===bid),fb=p&&p.name?findBenef(p.name):null;
+  const other=p&&p.name&&(!fb||fb.id!==bid)&&!norm(p.name).split(' ').includes(norm(b.prenom));
+  box.innerHTML=`<div class="card" style="border-color:${n?'var(--ok)':'var(--warn)'};margin:0"><div class="t" style="overflow-wrap:anywhere">📎 ${esc(f.name)}</div><div class="m" style="margin-top:4px">${n?`<span style="color:var(--ok)">✔ ${n} score(s) repris</span>${p.date?' · date du bilan '+fDate(p.date):''} — vérifie puis Enregistrer`:pdfErr?'PDF non lu (connexion nécessaire) — saisis les scores, le fichier sera joint':'Aucun score reconnu — saisis-les, le fichier sera joint à la fiche'}${other?`<br><span style="color:var(--warn)">⚠ Cette fiche semble concerner « ${esc(titleCase(p.name))} »</span>`:''}</div></div>`;
+ }catch(e){box.innerHTML='<div class="m" style="color:var(--bad)">Fichier illisible</div>'}
 }
 function delMesure(bid,mid){
  if(!confirm('Supprimer cette mesure ?'))return;const b=db.benef.find(x=>x.id===bid);b.hist=b.hist.filter(h=>h.id!==mid);
@@ -1061,7 +1107,7 @@ function viewPlus(){
  <div class="stat"><b>${eur(enc)}</b><span>Total encaissé</span></div></div>
  ${plusExtra()}
  <h2>Zone sensible</h2><div class="card"><button class="btn bad" style="width:100%" onclick="resetAll()">Tout effacer</button></div>
- <div class="m" style="text-align:center;margin-top:20px">Y.E.S.I CONCEPT — Suivi Pro v5</div>`;
+ <div class="m" style="text-align:center;margin-top:20px">Y.E.S.I CONCEPT — Suivi Pro v6</div>`;
 }
 async function exportJSON(){let docs=[];try{docs=await docAll()||[]}catch(e){}
  dl('yesi-suivi-'+todayStr()+'.json',JSON.stringify({app:'yesi-suivi-pro',version:2,date:new Date().toISOString(),...db,docs}),'application/json');lsSet(KEY+'_lastExport',todayStr());render();toast('Sauvegarde exportée')}
