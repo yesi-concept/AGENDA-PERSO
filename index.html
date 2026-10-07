@@ -82,7 +82,7 @@ a{color:var(--gold2);text-decoration:none}
 </style>
 </head>
 <body>
-<header><div class="brand"><div><h1>Y.E.S.I — Suivi Pro</h1><small>Bénéficiaires · RDV · Contrats · v3</small></div><small id="hdate"></small></div></header>
+<header><div class="brand"><div><h1>Y.E.S.I — Suivi Pro</h1><small>Bénéficiaires · RDV · Contrats · v4</small></div><small id="hdate"></small></div></header>
 <main id="main"></main>
 <button class="fab" id="fab" onclick="fab()">+</button>
 <nav>
@@ -95,7 +95,7 @@ a{color:var(--gold2);text-decoration:none}
 <div class="sheet-bg" id="sbg" onclick="closeSheet()"></div>
 <div class="sheet" id="sheet"></div>
 <div class="toast" id="toast"></div>
-<input type="file" id="docin" multiple accept=".html,.htm,.pdf,image/*" style="display:none">
+<input type="file" id="docin" multiple style="display:none">
 
 <script>
 const KEY='yesi_suivi_pro_v1';
@@ -265,7 +265,7 @@ function viewBenefDetail(id){
 function histCard(r){
  const late=r.statut==='prevu',[l,cl]=RSTAT[r.statut]||RSTAT.prevu;
  return `<div class="card tap" onclick="openRdv('${r.id}')"><div class="row"><div><div class="t">${fRdv(r)}</div><div class="m">${esc(r.type)}${r.protocole?' · '+esc(r.protocole):''}${r.axe?' · '+esc(r.axe):''}${r.ressenti?' · ressenti '+esc(r.ressenti)+'/10':''}</div></div><span class="badge ${late?'b-warn':cl}">${late?'À clôturer':l}</span></div>
- ${noteB('CE QUI S’EST DIT',r.cr)}${noteB('POINTS CLÉS',r.cles)}${noteB('TRAVAIL À FAIRE',r.devoirs)}${noteB('OBJECTIF PROCHAIN RDV',r.objNext)}</div>`;
+ ${noteB('CE QUI S’EST DIT',r.cr)}${noteB('POINTS CLÉS',r.cles)}${noteB('TRAVAIL À FAIRE',r.devoirs)}${noteB('OBJECTIF PROCHAIN RDV',r.objNext)}${DOCS.some(x=>x.rdvId===r.id)?`<div class="m" style="margin-top:8px;color:var(--gold2)">📎 ${DOCS.filter(x=>x.rdvId===r.id).length} fiche(s) jointe(s)</div>`:''}</div>`;
 }
 function formBenef(id){
  const b=id?db.benef.find(x=>x.id===id):{statut:'actif',domaine:'Football'};
@@ -364,6 +364,8 @@ function openRdv(id){
  <div class="g2"><div>${S('axe','Axe travaillé',[['','—'],...AXES.map(a=>a.l)],r.axe||'')}</div>
  <div><label>Ressenti séance : <b id="rv">${r.ressenti?esc(r.ressenti):'—'}</b>/10</label><input id="f_ressenti" type="range" min="1" max="10" value="${esc(r.ressenti||5)}" oninput="this.dataset.t=1;$('#rv').textContent=this.value" style="padding:0;height:44px;border:0;background:none;accent-color:var(--gold)"></div></div>
  ${T('objNext','Objectif du prochain RDV',r.objNext)}
+ <h2 style="margin-top:16px">Fiches de la séance (${DOCS.filter(x=>x.rdvId===id).length})</h2>${DOCS.filter(x=>x.rdvId===id).map(x=>`<div class="card"><div class="t" style="overflow-wrap:anywhere">${x.kind==='pdf'?'📄':x.kind==='image'?'🖼':'🌐'} ${esc(x.nom)}</div><div class="btns" style="margin-top:8px"><button class="btn sm" onclick="openDoc('${x.id}')">👁 Ouvrir</button><button class="btn sm" onclick="downloadDoc('${x.id}')">⬇</button>${x.kind!=='pdf'?`<button class="btn sm" onclick="pdfDoc('${x.id}')">📄 PDF</button>`:''}</div></div>`).join('')}
+ <button class="btn sm" style="width:100%" onclick="if(persistCR('${id}'))pickDocs('${r.benefId}','${id}')">📎 Joindre une fiche à cette séance</button>
  <div class="btns"><button class="btn" onclick="saveCR('${id}')">Enregistrer</button><button class="btn gold" onclick="saveCR('${id}',1)">Enregistrer + prochain RDV</button></div>
  <div class="btns"><button class="btn sm" onclick="formRdv('${id}')">✎ Modifier</button><button class="btn sm" onclick="icsOne('${id}')">📅 Agenda</button><button class="btn sm" onclick="if(persistCR('${id}'))openExport('rdv','${id}')">⬇ Export</button>${mail?`<button class="btn sm" onclick="mailCR('${id}')">✉ Résumé</button>`:''}<button class="btn sm bad" onclick="delRdv('${id}')">Supprimer</button></div>`);
 }
@@ -387,7 +389,7 @@ function mailCR(id){
  const body=`Bonjour,\n\nVoici le résumé de la séance Y.E.S.I de ${b.prenom||''} du ${fDate(r.date)}.\n\n`+(axe?`Axe travaillé : ${axe}\n\n`:'')+(dev?`Travail à faire d'ici la prochaine séance :\n${dev}\n\n`:'')+(obj?`Objectif de la prochaine séance :\n${obj}\n\n`:'')+(n&&n.id!==r.id?`Prochain rendez-vous : ${fRdv(n)}\n\n`:'')+`Sportivement,\nY.E.S.I CONCEPT`;
  location.href=`mailto:${encodeURIComponent(b.parentEmail||b.email)}?subject=${encodeURIComponent('Suivi Y.E.S.I — séance du '+fDate(r.date))}&body=${encodeURIComponent(body)}`;
 }
-function delRdv(id){if(!confirm('Supprimer ce RDV et son compte rendu ?'))return;db.rdv=db.rdv.filter(r=>r.id!==id);save();closeSheet();render();toast('RDV supprimé')}
+function delRdv(id){if(!confirm('Supprimer ce RDV et son compte rendu ?'))return;db.rdv=db.rdv.filter(r=>r.id!==id);DOCS.filter(x=>x.rdvId===id).forEach(x=>{x.rdvId=null;docGet(x.id).then(d=>{if(d){d.rdvId=null;return docPut(d)}}).catch(()=>{})});save();closeSheet();render();toast('RDV supprimé')}
 
 /* ============ CONTRATS ============ */
 function contratCard(c,name=true){
@@ -487,7 +489,10 @@ function loadDocs(){return docAll().then(l=>{DOCS=(l||[]).map(({data,...m})=>m);
 const fSize=n=>n>1e6?(n/1e6).toFixed(1)+' Mo':Math.max(1,Math.round((n||0)/1e3))+' Ko';
 const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 const titleCase=s=>String(s).toLowerCase().replace(/(^|[\s-])(\p{L})/gu,(m,a,c)=>a+c.toUpperCase());
-function findBenef(name){const n=norm(name);if(!n)return null;const srt=x=>x.split(' ').sort().join(' ');return db.benef.find(b=>{const f=norm(fullName(b));return f&&(f===n||srt(f)===srt(n))})||null}
+function findBenef(name){const n=norm(name);if(!n)return null;const srt=x=>x.split(' ').sort().join(' ');
+ const full=db.benef.find(b=>{const f=norm(fullName(b));return f&&(f===n||srt(f)===srt(n))});if(full)return full;
+ const w=n.split(' '),c=db.benef.filter(b=>w.includes(norm(b.prenom))&&(!norm(b.nom)||w.length===1||w.includes(norm(b.nom).split(' ')[0])));
+ return c.length===1?c[0]:null}
 const MOIS={janvier:1,fevrier:2,mars:3,avril:4,mai:5,juin:6,juillet:7,aout:8,septembre:9,octobre:10,novembre:11,decembre:12};
 function frDate(s){const m=norm(s).match(/(\d{1,2})(?:er)? ([a-z]+) (\d{4})/);return m&&MOIS[m[2]]?m[3]+'-'+pad(MOIS[m[2]])+'-'+pad(m[1]):''}
 function parseFiche(html){
@@ -495,6 +500,8 @@ function parseFiche(html){
  const title=tx(d.querySelector('title'));
  let name=tx(d.querySelector('.athlete-name'));
  if(!name){const m=title.match(/[-–—]\s*([^-–—]+)$/);if(m)name=m[1].trim()}
+ if(!name){const h=tx(d.querySelector('h1')).split(/[,:–—-]/)[0].trim();if(h&&h.split(' ').length<=4&&!/fiche|bilan|analyse|y\.?e\.?s\.?i/i.test(h))name=h}
+ const brand=tx(d.querySelector('.brand'));
  let date='',profil='';
  d.querySelectorAll('.athlete-info > div').forEach(x=>{if(x.classList.contains('athlete-name'))return;const t=tx(x);if(/date/i.test(t))date=frDate(t);else if(t&&!profil)profil=t});
  const body=tx(d.body);
@@ -508,7 +515,7 @@ function parseFiche(html){
   if(k&&sc[k]==null)sc[k]=n});
  const g=tx(d.querySelector('.alert-box h2')).match(/([\d.,]+)\s*\/\s*10/);if(g)sc.global=parseFloat(g[1].replace(',','.'));
  const b=body.match(/bilan Y\.E\.S\.I[^()%]{0,60}\((\d{1,3})\s*%/i);if(b)sc.bilan=+b[1];
- return{name,date,profil,scores:sc,title};
+ return{name,date,profil,scores:sc,title,brand};
 }
 function applyFiche(b,p){
  const s=p.scores;if(!Object.keys(s).length)return false;
@@ -517,34 +524,66 @@ function applyFiche(b,p){
  if(s.global!=null)b.scoreProto=String(s.global);if(s.bilan!=null)b.scoreBilan=String(s.bilan);
  if(p.date)b.auditDate=p.date;return true;
 }
-const kindOf=f=>/\.html?$/i.test(f.name)||f.type==='text/html'?'html':(f.type==='application/pdf'||/\.pdf$/i.test(f.name))?'pdf':(f.type||'').startsWith('image/')?'image':'autre';
-function readFile(f,kind){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);kind==='html'?r.readAsText(f):r.readAsDataURL(f)})}
-function pickDocs(benefId){const i=$('#docin');i.value='';i.onchange=()=>{const l=[...i.files];if(l.length)importFiles(l,benefId)};i.click()}
-async function importFiles(files,benefId){
+const isHtmlName=f=>/\.(html?|xhtml)$/i.test(f.name)||f.type==='text/html';
+const kindOf=f=>isHtmlName(f)?'html':(f.type==='application/pdf'||/\.pdf$/i.test(f.name))?'pdf':(f.type||'').startsWith('image/')||/\.(jpe?g|png|webp|heic|gif)$/i.test(f.name)?'image':'autre';
+function readAs(f,how){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);how==='text'?r.readAsText(f):r.readAsDataURL(f)})}
+async function readSmart(f){
+ let kind=kindOf(f);
+ if(kind==='autre'&&f.size<5e6){const t=await readAs(f,'text');if(/<!doctype html|<html[\s>]/i.test(t.slice(0,2000)))return{kind:'html',data:t}}
+ return{kind,data:await readAs(f,kind==='html'?'text':'url')};
+}
+function ficheCat(p){if(!p)return'';if(Object.keys(p.scores||{}).length)return'Analyse / bilan';const b=(p.brand||'').toUpperCase();return b.includes('RESSENTI')?'Ressenti instantané':'Fiche de travail'}
+let _pickRdv=null,_pending=[];
+function pickDocs(benefId,rdvId){_pickRdv=rdvId||null;const i=$('#docin');i.value='';i.onchange=()=>{const l=[...i.files];if(l.length)importFiles(l,benefId,_pickRdv)};i.click()}
+async function storeDoc(f,kind,data,p,b,rdvId){
+ const ex=DOCS.find(x=>x.benefId===b.id&&x.fichier===f.name);
+ const doc={id:ex?ex.id:uid(),benefId:b.id,rdvId:rdvId||(ex&&ex.rdvId)||null,nom:(p&&p.title)||f.name.replace(/\.[^.]+$/,''),cat:ficheCat(p)||(kind==='pdf'?'PDF':kind==='image'?'Image':'Document'),fichier:f.name,kind,mime:f.type||(kind==='html'?'text/html':kind==='pdf'?'application/pdf':''),date:todayStr(),size:f.size,meta:p?{date:p.date,scores:p.scores}:null,data};
+ await docPut(doc);const{data:_d,...m}=doc;DOCS=DOCS.filter(x=>x.id!==doc.id);DOCS.push(m);
+ const ap=p?applyFiche(b,p):false;
+ return '✔ '+esc(f.name)+' → <b style="color:var(--txt)">'+esc(fullName(b))+'</b>'+(doc.cat?' · '+esc(doc.cat):'')+(ap?' · scores mis à jour':'')+(ex?' · remplacé':'');
+}
+async function importFiles(files,benefId,rdvId){
  toast('Import en cours…');
- const rep=[];let changed=false;
+ const rep=[];_pending=[];
  for(const f of files){
   try{
    if(f.size>15e6){rep.push('✕ '+esc(f.name)+' : trop lourd (15 Mo max)');continue}
-   const kind=kindOf(f),data=await readFile(f,kind);
+   const{kind,data}=await readSmart(f);
+   if(kind==='autre'){rep.push('✕ '+esc(f.name)+' : format non pris en charge (HTML, PDF ou image)');continue}
    const p=kind==='html'?parseFiche(data):null;
-   let b=benefId?db.benef.find(x=>x.id===benefId):null,created=false;
-   if(!b){
-    const nm=p&&p.name?p.name:f.name.replace(/\.[^.]+$/,'').replace(/[_\-.]+/g,' ').replace(/\b(fiche|bilan|analyse|audit|rapport|yesi|y e s i|concept)\b/gi,' ');
-    b=findBenef(nm);
-    if(!b&&p&&p.name){const w=titleCase(p.name).split(' ');b={id:uid(),cree:todayStr(),prenom:w[0],nom:w.slice(1).join(' '),statut:'actif',domaine:/sport/i.test(p.profil)?'Football':'Autre',source:'Import fiche'};db.benef.push(b);created=true;changed=true}
-   }
-   if(!b){rep.push('✕ '+esc(f.name)+' : bénéficiaire non reconnu → ajoute-le depuis sa fiche');continue}
-   const ex=DOCS.find(x=>x.benefId===b.id&&x.fichier===f.name);
-   const doc={id:ex?ex.id:uid(),benefId:b.id,nom:(p&&p.title)||f.name.replace(/\.[^.]+$/,''),fichier:f.name,kind,mime:f.type||(kind==='html'?'text/html':kind==='pdf'?'application/pdf':''),date:todayStr(),size:f.size,meta:p?{date:p.date,scores:p.scores}:null,data};
-   await docPut(doc);
-   const{data:_d,...m}=doc;DOCS=DOCS.filter(x=>x.id!==doc.id);DOCS.push(m);
-   const ap=p?applyFiche(b,p):false;if(ap)changed=true;
-   rep.push('✔ '+esc(f.name)+' → <b style="color:var(--txt)">'+esc(fullName(b))+'</b>'+(created?' · nouveau bénéficiaire':'')+(ap?' · scores mis à jour':'')+(ex?' · remplacé':''));
+   let b=benefId?db.benef.find(x=>x.id===benefId):null;
+   if(!b){const nm=p&&p.name?p.name:f.name.replace(/\.[^.]+$/,'').replace(/[_\-.]+/g,' ').replace(/\b(fiche|resume|résumé|bilan|analyse|audit|rapport|seance|séance|yesi|y e s i|concept)\b/gi,' ');b=findBenef(nm)}
+   if(!b){_pending.push({f,kind,data,p});continue}
+   rep.push(await storeDoc(f,kind,data,p,b,rdvId));
   }catch(e){rep.push('✕ '+esc(f.name)+' : erreur (lecture ou stockage)')}
  }
- if(changed)save();render();
- openSheet(`<h3>Import terminé</h3>${rep.map(r=>`<div class="m" style="padding:7px 0;border-bottom:1px solid var(--line)">${r}</div>`).join('')}<div class="btns"><button class="btn gold" onclick="closeSheet()">OK</button></div>`);
+ save();render();
+ if(_pending.length)return askPending(rep);
+ if(rdvId&&!rep.some(r=>r.startsWith('✕'))){openRdv(rdvId);return toast('Fiche jointe à la séance')}
+ showReport(rep);
+}
+function showReport(rep){openSheet(`<h3>Import terminé</h3>${rep.map(r=>`<div class="m" style="padding:7px 0;border-bottom:1px solid var(--line)">${r}</div>`).join('')}<div class="btns"><button class="btn gold" onclick="closeSheet()">OK</button></div>`)}
+function askPending(rep){
+ window._rep=rep;
+ const bs=db.benef.slice().sort((a,b)=>(a.prenom||'').localeCompare(b.prenom||''));
+ openSheet(`<h3>À quel bénéficiaire ?</h3><div class="m">${_pending.length} fiche(s) sans bénéficiaire reconnu. Choisis-le ou crée-le.</div>
+ ${_pending.map((x,i)=>{const nm=x.p&&x.p.name?titleCase(x.p.name):'';return `<div class="card" style="margin-top:12px"><div class="t" style="overflow-wrap:anywhere">${esc((x.p&&x.p.title)||x.f.name)}</div>
+ <select id="pb_${i}" onchange="$('#pn_${i}').style.display=this.value==='__new'?'block':'none'" style="margin-top:8px"><option value="__new">＋ Créer un nouveau bénéficiaire</option>${bs.map(b=>`<option value="${b.id}">${esc(fullName(b))}</option>`).join('')}</select>
+ <input id="pn_${i}" placeholder="Prénom Nom" value="${esc(nm)}" style="margin-top:8px"></div>`}).join('')}
+ <div class="btns"><button class="btn" onclick="_pending=[];showReport(window._rep)">Ignorer</button><button class="btn gold" onclick="savePending()">Enregistrer</button></div>`);
+ // présélection : si un seul bénéficiaire porte ce prénom
+ _pending.forEach((x,i)=>{const nm=norm(x.p&&x.p.name);const c=nm?bs.filter(b=>norm(b.prenom)===nm.split(' ')[0]):[];if(c.length===1){$('#pb_'+i).value=c[0].id;$('#pn_'+i).style.display='none'}});
+}
+async function savePending(){
+ const rep=window._rep||[];
+ for(let i=0;i<_pending.length;i++){
+  const x=_pending[i],v=$('#pb_'+i).value;let b;
+  if(v==='__new'){const nm=$('#pn_'+i).value.trim();if(!nm){rep.push('✕ '+esc(x.f.name)+' : nom manquant');continue}
+   const w=titleCase(nm).split(' ');b={id:uid(),cree:todayStr(),prenom:w[0],nom:w.slice(1).join(' '),statut:'actif',domaine:'Football',source:'Import fiche'};db.benef.push(b)}
+  else b=db.benef.find(y=>y.id===v);
+  try{rep.push(await storeDoc(x.f,x.kind,x.data,x.p,b,_pickRdv))}catch(e){rep.push('✕ '+esc(x.f.name)+' : erreur de stockage')}
+ }
+ _pending=[];save();render();showReport(rep);
 }
 async function docFull(id){const d=await docGet(id);if(!d)throw 0;return d}
 async function docBlob(d){return d.kind==='html'?new Blob([d.data],{type:'text/html'}):(await fetch(d.data)).blob()}
@@ -572,7 +611,7 @@ function docsBlock(id){
  return `<h2>Documents & fiches (${ds.length})</h2>${ds.length?ds.map(x=>{
   const ic=x.kind==='html'?'🌐':x.kind==='pdf'?'📄':x.kind==='image'?'🖼':'📎',s=(x.meta&&x.meta.scores)||{};
   return `<div class="card"><div class="t" style="overflow-wrap:anywhere">${ic} ${esc(x.nom)}</div>
-  <div class="m">${x.meta&&x.meta.date?'Audit du '+fDate(x.meta.date)+' · ':''}ajouté le ${fDate(x.date)} · ${fSize(x.size)}</div>
+  <div class="m">${x.cat?esc(x.cat)+' · ':''}${x.rdvId&&db.rdv.find(r=>r.id===x.rdvId)?'séance du '+fDate(db.rdv.find(r=>r.id===x.rdvId).date)+' · ':''}${x.meta&&x.meta.date?'audit du '+fDate(x.meta.date)+' · ':''}ajouté le ${fDate(x.date)} · ${fSize(x.size)}</div>
   ${s.bilan!=null||s.global!=null?`<div class="m">${[s.bilan!=null&&'Bilan Y.E.S.I '+s.bilan+' %',s.global!=null&&'Protocoles '+s.global+'/10'].filter(Boolean).join(' · ')}</div>`:''}
   <div class="btns" style="margin-top:10px"><button class="btn sm" onclick="openDoc('${x.id}')">👁 Ouvrir</button><button class="btn sm" onclick="downloadDoc('${x.id}')">⬇ Télécharger</button>${x.kind!=='pdf'?`<button class="btn sm" onclick="pdfDoc('${x.id}')">📄 PDF</button>`:''}<button class="btn sm bad" onclick="delDoc('${x.id}')">✕</button></div></div>`}).join(''):'<div class="empty">Aucun document</div>'}
  <button class="btn sm" style="width:100%" onclick="pickDocs('${id}')">📎 Ajouter une fiche / un document</button>`;
@@ -719,7 +758,7 @@ function viewPlus(){
  <div class="stat"><b>${db.contrats.length}</b><span>Contrats (total)</span></div>
  <div class="stat"><b>${eur(enc)}</b><span>Total encaissé</span></div></div>
  <h2>Zone sensible</h2><div class="card"><button class="btn bad" style="width:100%" onclick="resetAll()">Tout effacer</button></div>
- <div class="m" style="text-align:center;margin-top:20px">Y.E.S.I CONCEPT — Suivi Pro v3 (fiches + export PDF)</div>`;
+ <div class="m" style="text-align:center;margin-top:20px">Y.E.S.I CONCEPT — Suivi Pro v4 (fiches + séances + export PDF)</div>`;
 }
 async function exportJSON(){let docs=[];try{docs=await docAll()||[]}catch(e){}
  dl('yesi-suivi-'+todayStr()+'.json',JSON.stringify({app:'yesi-suivi-pro',version:2,date:new Date().toISOString(),...db,docs}),'application/json');lsSet(KEY+'_lastExport',todayStr());render();toast('Sauvegarde exportée')}
